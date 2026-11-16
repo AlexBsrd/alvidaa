@@ -43,10 +43,10 @@ builds.
 | 43A6K (internal 43A53FEVS_0011) | EU_A (SSDP region 0) | MTK9602 (DevKit platform MTK9602_EU_A; armv7l) | U09.09 | V0000.09.09C.P0930 | 3290 | Chromium 111.0.0.0 UA / odin (armv7l; exact patch unconfirmed) | working | achieved | [@Hlushok](https://github.com/Hlushok) |
 | 65C350LE (Toshiba-branded) | ? | ? | U09.09 | V0000.09.09H.P0930 | not-exposed-over-SSDP (dd.xml stub on :3366 carrying only friendlyName/manufacturer/modelName; pairing handled by Sidee, profile 'modern', brand 'tos') | ? | untested | untested | [@VaheSaroyan](https://github.com/VaheSaroyan) |
 | 50U7DSE (internal 50U73SEVS_01, serial type 50U7SE) | EU_A (DEU) | MTK9618 (mt16587/mt5879; aarch64 kernel, armhf userland) | U09.62 | V0000.09.62N.Q0923 | 3290 | Chromium 111 "odin" (multi-shell UA: Weblayer/1.2.1, WebNavigator/6.1.10; aarch64) | working | achieved | [@roelven](https://github.com/roelven) |
-| 65E86GEVS (serial type 65E8GE) | EM_B | MTK9618 (mt5879; aarch64 kernel, armhf userland) | U09.09 | V0000.09.09O.P0930 | ? | Chromium 111 "odin" (api 3.0.1) | untested | achieved | [@noctonca](https://github.com/noctonca) |
-| 55U67LEVS (55U6LE series) | EU_A | MTK9603 | U09.60 | V0000.09.60A.Q0707 (55U67LEVS) | ? | Chromium 111.5563.5.1 "Odin" (armv7l) | untested | achieved | [unit owner](https://github.com/carteakey/alvidaa) |
 | VS1165UD1_0400 (Toshiba/Vestel; retail model unconfirmed) | EU_A (DevKit platform MT9602_EU_A; country unconfirmed) | MTK9602 (MT9602_EU_A; armv7l) | U06.10 | V0000.06.10S.N1222 | 2140 | Chromium 88 (armv7l) | untested | untested | [@PureBreadBagel](https://github.com/PureBreadBagel) |
 | 65A85QEVS | EU_A (Czech Republic) | MTK9618 (aarch64 kernel, 32-bit ARM userland) | U09.60 | V0000.09.60A.Q0602 | untested (SSDP silent; 36669/7000 only) | odin resources present; UA not recorded | working | achieved | [@LastThylacine](https://github.com/LastThylacine) |
+| 55U67LEVS (55U6LE series) | EU_A | MTK9603 | U09.60 | V0000.09.60A.Q0707 (55U67LEVS) | ? | Chromium 111.5563.5.1 "Odin" (armv7l) | untested | achieved | [unit owner](https://github.com/carteakey/alvidaa) |
+| 65E86GEVS (serial type 65E8GE) | EM_B | MTK9618 (mt5879; aarch64 kernel, armhf userland) | U09.09 | V0000.09.09O.P0930 | ? | Chromium 111 "odin" (api 3.0.1) | untested | achieved | [@noctonca](https://github.com/noctonca) |
 <!-- INVENTORY:END -->
 
 ## What each token means on each unit
@@ -153,6 +153,23 @@ never hand-edit between the markers.
 - `identity_gate` **working** — Per-app {appid,md5,permissions} gate: the 503 appconfig rejection on browser fileWrite. The fetcher write route is not gated.
 - `root` **achieved** — fetcher.fetchFile wrote sw2.js + installer.ipk; superwatch 83/82 installed re.installer; postinst ran uid 0 (CapEff 0000003fffffffff) and started key-only Dropbear on :8008. Boot persistence via re_sshd serviceList autostart re-arms dropbear at every cold boot (~30 s).
 
+**VS1165UD1_0400 (Toshiba/Vestel; retail model unconfirmed) — V0000.06.10S.N1222**
+- `pairing` **working** — Python vidaa-control successfully completed RemoteNow MQTT PIN pairing; TV control broker reachable on TCP 36669. End-to-end custom launcher not tested.
+- `file_bridge_traversal` **closed** — WebSDK_createFileRequest fileRead of ../proc/version returned an empty string from ordinary HTTP and again through a vidaahub.com DNS-mapped HTTP origin; tested with modes 3 and 0. alvidaa recon v8 returned empty response from WebSDK_createFileRequest for file reads. No successful traversal observed in these tests; whether the cause is an origin gate, path restriction or other interface behaviour is unconfirmed.
+- `root` **untested** — No root method executed. Browser file access attempt failed in tested context; IPK prerequisite tests were only run in the normal browser, not an authorised application context. Root remains untested.
+
+**65A85QEVS — V0000.09.60A.Q0602**
+- `pairing` **untested** — Not exercised: no client cert on the host. The chain needs no pairing.
+- `file_bridge_traversal` **open** — hiutils.fileRead traverses with a one-element array path (../proc/uptime -> ret:true); bare strings are rejected. Read-only probe.
+- `file_bridge_write` **closed** — Browser fileWrite (HiUtils_createRequest) returns 503 'client request permission check error, please check appconfig'; WebSDK_createFileRequest does not exist on this build. The working write primitive is the FaaS fetcher (basic/fetcher fetchFile, uid 314).
+- `identity_gate` **gated** — The 503 appconfig rejection on browser fileWrite; the fetcher route is not gated the same way.
+- `root` **achieved** — fetchFile wrote sw2.js + installer.ipk; superwatch 83/82 installed re.installer (Architecture: mtk9618); postinst ran uid 0 and started the Node root shell on :8008. fetchFile cannot create directories, so the PFM payload is planted by the postinst, not by the fetcher.
+
+**55U67LEVS (55U6LE series) — V0000.09.60A.Q0707 (55U67LEVS)**
+- `pairing` **working** — modern profile, colon-formatted MAC, one PIN dialog, tokenissuance with a 2-day access / 30-day refresh token (2026-11-14).
+- `file_bridge_traversal` **open** — path:['../proc/uptime'] -> ret:true with content; path:'../proc/uptime' -> ret:false 'invalid path' (2026-11-14).
+- `root` **achieved** — One-shot uid-0 postinst verified 2026-11-14 (Uid 0, CapEff 000001ffffffffff) after fixing the IPK for the vendor opkg (AppId/AppName + non-empty data.tar.gz). No boot persistence and no shell; /config remounts rw and back cleanly as root.
+
 **65E86GEVS (serial type 65E8GE) — V0000.09.09O.P0930**
 - `launcher` **untested** — Launcher Home module identified statically: tv.vidaa.app.operationui (AppId launcher, uid 305:909, branch VIDAA_UI_MT9618_U902_EUAU_MP_20250708), wired via HI_UI_OPERATIONUI in startgui.sh, webpack bundle MODULE_LAUNCHER with apps/{launcher,all-inputs,app-service,ads,...}; SDK contracts (changeSourceTo, getAllInputsData, getAppList) present. No launcher was installed or run on this unit.
 - `file_bridge_traversal` **open** — HiUtils fileRead with '/' traversal read world-readable files outside the mode base (verified read of /proc:/etc files); the exact path form is in the model guide.
@@ -160,20 +177,6 @@ never hand-edit between the markers.
 - `identity_gate` **n-a** — hiutils enforces appconfig per action (setDebugPort/installApplication -> 503) but permits the fileRead/fileWrite pair, and the phoenix permission check is bypassed by an empty identifier regardless. No per-app gate blocks the open APIs on this build.
 - `devtools_forge` **untested** — Not tested. For the record, setDebugPort and installApplication are refused with 503 appconfig while fileRead/fileWrite are allowed.
 - `root` **achieved** — superwatch_server (uid 0) UDS chowned to gid 616; phoenix (uid 314) is in group 616 and passes the per-command peer-credential check by design. Command 55 RunIpkRestoreCommand builds a shell command from the pkg-name arg without quoting; two frames with a crafted name mint a setuid root shell. /proc/self/status Uid 314 0 0 0, /etc/shadow readable, /data listed. Persistence = writable-service boot hook (arch withheld); teardown in the guide; the vendor bug is still present after cleanup.
-**55U67LEVS (55U6LE series) — V0000.09.60A.Q0707 (55U67LEVS)**
-- `pairing` **working** — modern profile, colon-formatted MAC, one PIN dialog, tokenissuance with a 2-day access / 30-day refresh token (2026-11-14).
-- `file_bridge_traversal` **open** — path:['../proc/uptime'] -> ret:true with content; path:'../proc/uptime' -> ret:false 'invalid path' (2026-11-14).
-- `root` **achieved** — One-shot uid-0 postinst verified 2026-11-14 (Uid 0, CapEff 000001ffffffffff) after fixing the IPK for the vendor opkg (AppId/AppName + non-empty data.tar.gz). No boot persistence and no shell; /config remounts rw and back cleanly as root.
-**VS1165UD1_0400 (Toshiba/Vestel; retail model unconfirmed) — V0000.06.10S.N1222**
-- `pairing` **working** — Python vidaa-control successfully completed RemoteNow MQTT PIN pairing; TV control broker reachable on TCP 36669. End-to-end custom launcher not tested.
-- `file_bridge_traversal` **closed** — WebSDK_createFileRequest fileRead of ../proc/version returned an empty string from ordinary HTTP and again through a vidaahub.com DNS-mapped HTTP origin; tested with modes 3 and 0. alvidaa recon v8 returned empty response from WebSDK_createFileRequest for file reads. No successful traversal observed in these tests; whether the cause is an origin gate, path restriction or other interface behaviour is unconfirmed.
-- `root` **untested** — No root method executed. Browser file access attempt failed in tested context; IPK prerequisite tests were only run in the normal browser, not an authorised application context. Root remains untested.
-**65A85QEVS — V0000.09.60A.Q0602**
-- `pairing` **untested** — Not exercised: no client cert on the host. The chain needs no pairing.
-- `file_bridge_traversal` **open** — hiutils.fileRead traverses with a one-element array path (../proc/uptime -> ret:true); bare strings are rejected. Read-only probe.
-- `file_bridge_write` **closed** — Browser fileWrite (HiUtils_createRequest) returns 503 'client request permission check error, please check appconfig'; WebSDK_createFileRequest does not exist on this build. The working write primitive is the FaaS fetcher (basic/fetcher fetchFile, uid 314).
-- `identity_gate` **gated** — The 503 appconfig rejection on browser fileWrite; the fetcher route is not gated the same way.
-- `root` **achieved** — fetchFile wrote sw2.js + installer.ipk; superwatch 83/82 installed re.installer (Architecture: mtk9618); postinst ran uid 0 and started the Node root shell on :8008. fetchFile cannot create directories, so the PFM payload is planted by the postinst, not by the fetcher.
 <!-- INVENTORY_DETAIL:END -->
 
 ## Community reports awaiting details
