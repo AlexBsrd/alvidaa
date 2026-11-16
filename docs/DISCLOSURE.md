@@ -79,10 +79,16 @@ release. The test is simple: could a competent reader reproduce the primitive
 from what is published, without the withheld part? If yes, the write-up is a
 payload with extra steps.
 
-New classes are reported to the vendor before they are published. The existing
-ticket is `VIDAA-PSIRT-2026-005`; annotate the guide with the ticket and the
-date, and promote it to a full write-up once a fix ships or the vendor declines
-to fix.
+New classes are reported to the vendor before the *detail* is published. The
+existing ticket is `VIDAA-PSIRT-2026-005`; annotate the guide with the ticket
+and the date.
+
+The window is **bounded and starts when the report is sent**, not when the
+vendor replies. If the window passes without a fix or a response, publish the
+full write-up and note the silence — a non-answer counts as a "won't fix" for
+this purpose. The vendor does not get a veto over publication; the window is a
+courtesy, not a gate. The property-level write-up can go out immediately,
+because it describes the failure without handing over the working chain.
 
 ## Teardown is not optional
 
