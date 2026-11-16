@@ -1,0 +1,36 @@
+# Paths that must not exist in the public tree.
+# One glob per line. Blank lines and comments are ignored.
+# scripts/check-payloads.sh fails the build if any listed path is tracked.
+#
+# The list grows as the older cohort is removed. Commented entries are the
+# known remaining payloads; uncomment each as it moves to alvidaa-private.
+
+# --- removed 2026-11-16 (from #70, the 65A85QEVS PR) ---
+tools/alvidaa_ipk/
+tools/tv_ipk.py
+launcher/pub/ipk/
+launcher/probes/08-ipk.html
+
+# --- older cohort, still present ---
+# tools/otaTest-hook.sh
+# tools/u7q/faas/
+# tools/u7q/web/install.html
+# tools/ur9s/faas/
+# tools/ur9s/web/install.html
+# tools/he40/root/scripts/host/build_payload.sh
+# tools/he40/root/scripts/host/build_tvi_payload.py
+# tools/he40/root/scripts/host/plant_payload.js
+# tools/a6q/deploy_pfm.py
+# tools/a6q/a6q_boot.js
+# tools/a6q/cdp*.py
+# launcher/hookinstall*.html
+# launcher/hookswap*.html
+# launcher/selfinstall.html
+# docs/models/*/source/re_sshd/
+# docs/models/55E7QTUK/*/source/phase3-*.html
+# docs/models/55E7QTUK/*/source/hookrearm*.html
+# docs/models/55E7QTUK/*/source/recon-*hook*.html
+# launcher/probes/pkginstall.html
+# launcher/probes/install-pkgmgr.html
+# launcher/probes/trigger53.html
+# launcher/probes/swctrl.html

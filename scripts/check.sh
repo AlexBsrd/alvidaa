@@ -10,6 +10,7 @@
 #   7. no secrets or vendor binaries
 #   8. no duplicate firmware rows in the inventory
 #   9. inventory capability values stay in the status vocabulary
+#  10. no payloads from scripts/payloads.deny are tracked
 #
 # Usage: scripts/check.sh          (from any directory)
 # Exit 0 = clean, 1 = at least one failure. Writes nothing to the tree.
@@ -21,11 +22,11 @@ fail=0
 
 step() { printf '\n==> %s\n' "$*"; }
 
-step "1/9 generated tables vs JSON sources"
+step "1/10 generated tables vs JSON sources"
 python3 scripts/gen-inventory.py --check || fail=1
 python3 scripts/gen-exploits.py --check || fail=1
 
-step "2/9 python syntax"
+step "2/10 python syntax"
 python3 - <<'PY' || fail=1
 import ast, subprocess, sys
 
@@ -44,7 +45,7 @@ print("\n".join(bad) if bad else f"   {len(files)} files parsed")
 sys.exit(1 if bad else 0)
 PY
 
-step "3/9 shell syntax"
+step "3/10 shell syntax"
 shells=0
 while IFS= read -r f; do
   shells=$((shells + 1))
@@ -52,7 +53,7 @@ while IFS= read -r f; do
 done < <(git ls-files '*.sh')
 echo "   $shells scripts checked"
 
-step "4/9 relative markdown links"
+step "4/10 relative markdown links"
 python3 - <<'PY' || fail=1
 import pathlib, re, subprocess, sys
 
@@ -82,14 +83,14 @@ print("\n".join(bad) if bad else f"   {len(files)} markdown files checked")
 sys.exit(1 if bad else 0)
 PY
 
-step "5/9 docs site (needs: pip install markdown)"
+step "5/10 docs site (needs: pip install markdown)"
 if python3 -c "import markdown" 2>/dev/null; then
   python3 scripts/gen-site.py --check || fail=1
 else
   echo "   skipped — python3 -m pip install markdown"
 fi
 
-step "6/9 model guides are indexed"
+step "6/10 model guides are indexed"
 python3 - <<'PY' || fail=1
 import pathlib, sys
 
@@ -102,7 +103,7 @@ print("\n".join(missing) if missing else f"   {len(guides)} guides indexed")
 sys.exit(1 if missing else 0)
 PY
 
-step "7/9 no secrets or vendor binaries"
+step "7/10 no secrets or vendor binaries"
 python3 - <<'PY' || fail=1
 import pathlib, subprocess, sys
 
@@ -141,7 +142,7 @@ print("\n".join(bad) if bad else f"   {len(files)} files scanned")
 sys.exit(1 if bad else 0)
 PY
 
-step "8/9 no duplicate firmware rows"
+step "8/10 no duplicate firmware rows"
 python3 - <<'PY' || fail=1
 # Two layers, both hard failures (this is how 43Q60SEVS nearly landed as a
 # second entry for 09.60W.Q0612):
@@ -198,7 +199,7 @@ print("\n".join(bad) if bad else f"   {len(rows)} rows, no collisions")
 sys.exit(1 if bad else 0)
 PY
 
-step "9/9 capability status vocabulary"
+step "9/10 capability status vocabulary"
 python3 - <<'PY' || fail=1
 # The matrix columns are machine-readable, which only holds while every
 # capability value is exactly one vocabulary token. Drift looks like
@@ -246,6 +247,9 @@ for f in inv.get("firmwares", []):
 print("\n".join(bad) if bad else f"   {checked} capability cells, all in vocabulary")
 sys.exit(1 if bad else 0)
 PY
+
+step "10/10 no payloads from the denylist"
+bash scripts/check-payloads.sh || fail=1
 
 if [ "$fail" -eq 0 ]; then
   printf '\nOK — repo checks clean\n'
