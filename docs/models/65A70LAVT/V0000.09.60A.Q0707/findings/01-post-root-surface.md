@@ -1,9 +1,8 @@
 # Post-root surface map — 65A70LAVT / V0000.09.60A.Q0707
 
 Read-only recon from a root shell on 2026-11-13. This is a map of what the
-build exposes, not a set of instructions. The working detail for the unfixed
-classes is withheld under the publication policy; the properties are here so
-the next model can be compared against them.
+build exposes, not a set of instructions. The new classes are named without
+the how for now; the rest is in full.
 
 ## Partitions and permissions
 
@@ -63,31 +62,25 @@ for the TV Browser app. `serviceManager.js` passes immediately when the auth
 map is empty. The `from='Unknown'` path skips the HTTP-layer check but not the
 per-service ACL, so permission-gated keys still return 503.
 
-## New classes (property only)
+## New classes
 
-These are the findings that are new to this repository and were unfixed when
-the unit died. They are named, not described. Pending a report under the
-existing `VIDAA-PSIRT-2026-005` thread; full write-ups follow a fix or a
-"won't fix".
+These are the ones that are new here. They were live when the TV died and
+VIDAA hasn't seen them yet, so they're named without the how. Once they've had
+a look — or a reasonable window passes with no answer — the detail goes in.
 
-- **CDP on `:9226`** — the Zenix remote-debugging endpoint accepts
-  unauthenticated WebSocket connections from the LAN and exposes the full
-  browser context, including the `vowOS` bridge. The navigation technique and
-  the request shapes are withheld.
-- **`debugInstall`** — the pkgmgr service installs an IPK from the OTA download
-  directory without the signature check that the normal `installApp` path
-  performs. The call shape and package requirements are withheld.
+- **CDP on `:9226`** — the Zenix debug endpoint takes unauthenticated WebSocket
+  connections from the LAN and exposes the whole browser context, including the
+  `vowOS` bridge.
+- **`debugInstall`** — pkgmgr installs an IPK from the OTA download directory
+  without the signature check the normal `installApp` path does.
 - **`from='Unknown'`** — the phoenix HTTP layer accepts a caller-supplied
-  origin that skips its check. Withheld.
+  origin that skips its check.
 - **FaaS SSRF** — the fetcher can be pointed at arbitrary URLs from the TV's
-  network position. Withheld.
-- **`setSeleniumDebug`** — a no-auth write that enables the debug surface.
-  Withheld.
+  network position.
+- **`setSeleniumDebug`** — a no-auth write that turns on the debug surface.
 - **`spotify_loader`** — loads an arbitrary URL in a privileged context.
-  Withheld.
 - **`tilesService` key seed** — the Prime Video UUS decrypt key is a hardcoded
-  seed in `define.js`. The key material is withheld; the property is recorded
-  so the next unit can check whether it is still hardcoded.
+  seed in `define.js`. The key itself isn't here.
 
 ## What was not finished
 

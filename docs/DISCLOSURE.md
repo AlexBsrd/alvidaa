@@ -58,37 +58,24 @@ model, instead of a sequence of commands that only works on one build.
 
 ## New technique classes
 
-The boundary above is about *what* a guide publishes. It also needs a rule for
-*when*.
+A class that's already written up, or already patched, goes in as soon as it's
+measured. A **new** one — something the repo hasn't recorded before, especially
+if it needs no auth or no LAN access — gets named but not described until VIDAA
+has had a look.
 
-A technique class that is already documented, or already fixed, can be written
-up at the level above as soon as it is measured. A **new class** — a primitive
-this repository has not recorded before, especially one that is
-unauthenticated or reachable without LAN access — gets one of two treatments
-until there is a fix or a clear "won't fix" from the vendor:
+That's it. The finding goes out now; the working chain waits. If they patch it,
+write the rest up. If they don't answer after a reasonable window, write it up
+anyway and say they didn't answer. They don't get a veto — the heads-up is a
+courtesy, not a gate.
 
-- **Property-only.** Name what the build does and why it matters, and withhold
-  the request shape, the exact call and the payload.
-- **Delay.** Hold the write-up entirely for a coordinated window (30–90 days
-  from the vendor report) if even the property is enough to point at a working
-  path.
-
-Applied retroactively this is meaningless; the older material is already
-public. Applied going forward it is the difference between research and a
-release. The test is simple: could a competent reader reproduce the primitive
-from what is published, without the withheld part? If yes, the write-up is a
+The test for whether you're on the right side of the line: could someone
+rebuild the primitive from what you published? If yes, you've published a
 payload with extra steps.
 
-New classes are reported to the vendor before the *detail* is published. The
-existing ticket is `VIDAA-PSIRT-2026-005`; annotate the guide with the ticket
-and the date.
+The only thing that never goes in is key material and a ready-to-run script.
+That's not a disclosure question — it's not research.
 
-The window is **bounded and starts when the report is sent**, not when the
-vendor replies. If the window passes without a fix or a response, publish the
-full write-up and note the silence — a non-answer counts as a "won't fix" for
-this purpose. The vendor does not get a veto over publication; the window is a
-courtesy, not a gate. The property-level write-up can go out immediately,
-because it describes the failure without handing over the working chain.
+Ticket: `VIDAA-PSIRT-2026-005`. Put the date in the guide.
 
 ## Teardown is not optional
 
