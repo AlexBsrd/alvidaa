@@ -183,6 +183,7 @@ both regenerate from `docs/research/inventory.json`.
 | 43A6K | V0000.09.09C.P0930 | working | achieved | [@Hlushok](https://github.com/Hlushok) |
 | 65C350LE | V0000.09.09H.P0930 | untested | untested | [@VaheSaroyan](https://github.com/VaheSaroyan) |
 | 50U7DSE | V0000.09.62N.Q0923 | working | achieved | [@roelven](https://github.com/roelven) |
+| VS1165UD1_0400 | V0000.06.10S.N1222 | untested | untested | [@PureBreadBagel](https://github.com/PureBreadBagel) |
 | 65A85QEVS | V0000.09.60A.Q0602 | working | achieved | [@LastThylacine](https://github.com/LastThylacine) |
 <!-- INVENTORY:END -->
 
