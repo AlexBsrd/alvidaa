@@ -6,6 +6,7 @@ recorded on. Cross-model material lives in `docs/research/`.
 - [43A5FE / MTK9602 guide](43A5FE/V0010.09.09A.P0930/README.md)
 - [50A51HUV / MTK9602 guide](50A51HUV/09.01O.P0813/README.md)
 - [50A51HUV findings](50A51HUV/09.01O.P0813/FINDINGS.md)
+- [65A70LAVT / MTK9603 guide](65A70LAVT/V0000.09.60A.Q0707/README.md)
 - [65A85QEVS / MTK9618 guide](65A85QEVS/V0000.09.60A.Q0602/README.md)
 - [method inventory](../research/EXPLOITS.md)
 - [inventory](../research/inventory.json)

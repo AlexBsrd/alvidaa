@@ -47,6 +47,7 @@ builds.
 | 65A85QEVS | EU_A (Czech Republic) | MTK9618 (aarch64 kernel, 32-bit ARM userland) | U09.60 | V0000.09.60A.Q0602 | untested (SSDP silent; 36669/7000 only) | odin resources present; UA not recorded | working | achieved | [@LastThylacine](https://github.com/LastThylacine) |
 | 55U67LEVS (55U6LE series) | EU_A | MTK9603 | U09.60 | V0000.09.60A.Q0707 (55U67LEVS) | ? | Chromium 111.5563.5.1 "Odin" (armv7l) | untested | achieved | [unit owner](https://github.com/carteakey/alvidaa) |
 | 65E86GEVS (serial type 65E8GE) | EM_B | MTK9618 (mt5879; aarch64 kernel, armhf userland) | U09.09 | V0000.09.09O.P0930 | ? | Chromium 111 "odin" (api 3.0.1) | untested | achieved | [@noctonca](https://github.com/noctonca) |
+| 65A70LAVT (serial type 65A7NA) | AU (EM_C, countryID AUS) | MTK9603 (MT5896) | U09.60 | V0000.09.60A.Q0707 (65A70LAVT) | ? | Chromium 111.5563.5.1 "Odin" (armv7l) | untested | achieved | [Cameron](https://github.com/sl3yr84) |
 <!-- INVENTORY:END -->
 
 ## What each token means on each unit
@@ -177,6 +178,12 @@ never hand-edit between the markers.
 - `identity_gate` **n-a** — hiutils enforces appconfig per action (setDebugPort/installApplication -> 503) but permits the fileRead/fileWrite pair, and the phoenix permission check is bypassed by an empty identifier regardless. No per-app gate blocks the open APIs on this build.
 - `devtools_forge` **untested** — Not tested. For the record, setDebugPort and installApplication are refused with 503 appconfig while fileRead/fileWrite are allowed.
 - `root` **achieved** — superwatch_server (uid 0) UDS chowned to gid 616; phoenix (uid 314) is in group 616 and passes the per-command peer-credential check by design. Command 55 RunIpkRestoreCommand builds a shell command from the pkg-name arg without quoting; two frames with a crafted name mint a setuid root shell. /proc/self/status Uid 314 0 0 0, /etc/shadow readable, /data listed. Persistence = writable-service boot hook (arch withheld); teardown in the guide; the vendor bug is still present after cleanup.
+
+**65A70LAVT (serial type 65A7NA) — V0000.09.60A.Q0707 (65A70LAVT)**
+- `pairing` **working** — 2024 VidaaAppAndroidV01 cert + modern credentials; colon-formatted MAC; PIN + tokenissuance.
+- `file_bridge_traversal` **open** — bridge ../ escape verified with readable output (mode 0 -> /tmp, mode 4 -> /data).
+- `identity_gate` **working** — fileWrite -> 503 'client request permission check error, please check appconfig'; same gate as 43A5LE/55U67LEVS. Cross-confirmed on a second unit (85U8Q, V0000.09.60F.Q0528).
+- `root` **achieved** — uid 0 via the rc.local otaTest.sh hook; boot-persistent. Dropbear 2024.86 on :8008, key-only.
 <!-- INVENTORY_DETAIL:END -->
 
 ## Community reports awaiting details

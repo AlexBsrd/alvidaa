@@ -811,6 +811,40 @@
         "root": "superwatch_server (uid 0) UDS chowned to gid 616; phoenix (uid 314) is in group 616 and passes the per-command peer-credential check by design. Command 55 RunIpkRestoreCommand builds a shell command from the pkg-name arg without quoting; two frames with a crafted name mint a setuid root shell. /proc/self/status Uid 314 0 0 0, /etc/shadow readable, /data listed. Persistence = writable-service boot hook (arch withheld); teardown in the guide; the vendor bug is still present after cleanup.",
         "launcher": "Launcher Home module identified statically: tv.vidaa.app.operationui (AppId launcher, uid 305:909, branch VIDAA_UI_MT9618_U902_EUAU_MP_20250708), wired via HI_UI_OPERATIONUI in startgui.sh, webpack bundle MODULE_LAUNCHER with apps/{launcher,all-inputs,app-service,ads,...}; SDK contracts (changeSourceTo, getAllInputsData, getAppList) present. No launcher was installed or run on this unit."
       }
+    },
+    {
+      "id": "V0000.09.60A.Q0707 (65A70LAVT)",
+      "model": "65A70LAVT (serial type 65A7NA)",
+      "region": "AU (EM_C, countryID AUS)",
+      "soc": "MTK9603 (MT5896)",
+      "vidaa_os": "U09.60",
+      "transport_protocol": "?",
+      "browser": "Chromium 111.5563.5.1 \"Odin\" (armv7l)",
+      "build_date": "2026-07-06 (kernel)",
+      "tested_by": [
+        {
+          "name": "Cameron",
+          "url": "https://github.com/sl3yr84"
+        }
+      ],
+      "capabilities": {
+        "pairing": "working",
+        "launcher": "untested",
+        "native_home": "untested",
+        "file_bridge_traversal": "open",
+        "file_bridge_write": "gated",
+        "identity_gate": "working",
+        "euladpp_untar": "untested",
+        "devtools_forge": "untested",
+        "root": "achieved",
+        "notes": "Community report, 2026-11-13; unit destroyed 2026-11-14, so nothing is re-verifiable. Root + boot-persistent SSH on :8008 via rc.local -> /var/local/otaTest.sh symlink -> /APPS/boot_hook.sh; the symlink bypasses noexec because the kernel checks the target fs (/APPS is not noexec). Write primitive is the FaaS fetcher, not the browser fileWrite (gated). SELinux enforcing (policyvers 33) — first enforcing 09.60 unit recorded. No SUID/SGID. Post-root surface: 8 mosquitto listeners (:1883 double-locked by iptables + plugin), phoenix services answer without auth when appconfig has no permissions, CDP on :9226 accepts unauthenticated LAN connections, debugInstall skips the signature check. New classes withheld under DISCLOSURE.md; pending report under the VIDAA-PSIRT-2026-005 thread. Guide: docs/models/65A70LAVT/V0000.09.60A.Q0707/."
+      },
+      "capability_detail": {
+        "pairing": "2024 VidaaAppAndroidV01 cert + modern credentials; colon-formatted MAC; PIN + tokenissuance.",
+        "file_bridge_traversal": "bridge ../ escape verified with readable output (mode 0 -> /tmp, mode 4 -> /data).",
+        "identity_gate": "fileWrite -> 503 'client request permission check error, please check appconfig'; same gate as 43A5LE/55U67LEVS. Cross-confirmed on a second unit (85U8Q, V0000.09.60F.Q0528).",
+        "root": "uid 0 via the rc.local otaTest.sh hook; boot-persistent. Dropbear 2024.86 on :8008, key-only."
+      }
     }
   ]
 }

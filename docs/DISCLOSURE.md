@@ -56,6 +56,42 @@ marginal benefit to an owner who wants to understand their own TV is zero.
 It explains the shape of the failure, which is what transfers to the next
 model, instead of a sequence of commands that only works on one build.
 
+## New technique classes
+
+The boundary above is about *what* a guide publishes. It also needs a rule for
+*when*.
+
+A technique class that is already documented, or already fixed, can be written
+up at the level above as soon as it is measured. A **new class** — a primitive
+this repository has not recorded before, especially one that is
+unauthenticated or reachable without LAN access — gets one of two treatments
+until there is a fix or a clear "won't fix" from the vendor:
+
+- **Property-only.** Name what the build does and why it matters, and withhold
+  the request shape, the exact call and the payload.
+- **Delay.** Hold the write-up entirely for a coordinated window (30–90 days
+  from the vendor report) if even the property is enough to point at a working
+  path.
+
+Applied retroactively this is meaningless; the older material is already
+public. Applied going forward it is the difference between research and a
+release. The test is simple: could a competent reader reproduce the primitive
+from what is published, without the withheld part? If yes, the write-up is a
+payload with extra steps.
+
+New classes are reported to the vendor before they are published. The existing
+ticket is `VIDAA-PSIRT-2026-005`; annotate the guide with the ticket and the
+date, and promote it to a full write-up once a fix ships or the vendor declines
+to fix.
+
+## Teardown is not optional
+
+Reversibility is the design law, and it is what makes the repository
+defensible. A guide without a rollback is incomplete, regardless of how good
+the finding is. State how to undo every state change the guide describes, or
+state plainly that it cannot be undone and why. A guide that leaves a unit
+modified with no way back is a liability, not a contribution.
+
 ## Verification labels
 
 | Label | Means |
