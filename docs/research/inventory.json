@@ -715,6 +715,39 @@
         "root": "fetchFile wrote sw2.js + installer.ipk; superwatch 83/82 installed re.installer (Architecture: mtk9618); postinst ran uid 0 and started the Node root shell on :8008. fetchFile cannot create directories, so the PFM payload is planted by the postinst, not by the fetcher.",
         "pairing": "Not exercised: no client cert on the host. The chain needs no pairing."
       }
+    },
+    {
+      "id": "V0000.09.60A.Q0707 (55U67LEVS)",
+      "model": "55U67LEVS (55U6LE series)",
+      "region": "EU_A",
+      "soc": "MTK9603",
+      "vidaa_os": "U09.60",
+      "transport_protocol": "?",
+      "browser": "Chromium 111.5563.5.1 \"Odin\" (armv7l)",
+      "build_date": "? (same firmware string as 43A5LE, whose guide records 2026-07-07)",
+      "tested_by": [
+        {
+          "name": "unit owner",
+          "url": "https://github.com/carteakey/alvidaa"
+        }
+      ],
+      "capabilities": {
+        "pairing": "working",
+        "launcher": "untested",
+        "native_home": "untested",
+        "file_bridge_traversal": "open",
+        "file_bridge_write": "untested",
+        "identity_gate": "untested",
+        "euladpp_untar": "untested",
+        "devtools_forge": "untested",
+        "root": "achieved",
+        "notes": "Session 2026-11-14, owner's unit, guide docs/models/55U67LEVS/V0000.09.60A.Q0707/ and findings/00-01. Broker validates the client cert CA at TLS (self-signed cert -> 'tlsv1 alert unknown CA'; official VidaaAppAndroidV01 cert completes TLSv1.2), then pairs with the modern profile and a colon-formatted MAC. File bridge rejects bare-string ../ ('invalid path') but traverses a one-element array path; base /APPS/. Write primitive is the FaaS fetcher (basic/fetcher fetchFile -> 'download finished' as uid 314 into /APPS and the jsservice.basic CHA dir). Exec primitive: POST localhost:9009/function/basic/fetch/<name> runs a fetcher-written module as uid 314/gid 314 with gid 616 in the group list. Root: superwatch 82 -> /usr/local/scripts/ipk_install.sh (root) -> vendor opkg -> postinst uid 0 (CapEff 000001ffffffffff). The vendor opkg is patched: it requires AppId/AppName in control and a non-empty data.tar.gz, otherwise 'install_app_configs: Invalid input parameters' + 'Failed to extract data files' and rc -1. Outcome readable as uid 314 at /tmp/ipk_install_result. Persistence and a shell were NOT established (one-shot install). EDID: /config/EDID_BIN is a per-port config-driven catalogue on the p24 ext4 data partition (ro at runtime, remountable rw as root), not the raw eeprom; per-port selection lives in /config/model/Customer_1.ini and /config/edid_cfg.ini, and the vendor ships a FreeSync variant advertising an AMD 48-120 block. No EDID was written. Launcher lanes not exercised. Host note: the session Mac is MDM-managed with the Defender network extension dropping inbound non-loopback connections, so pages were served over a plain-TCP bore tunnel; a tunnel-served page still reaches the TV's own localhost:9009."
+      },
+      "capability_detail": {
+        "pairing": "modern profile, colon-formatted MAC, one PIN dialog, tokenissuance with a 2-day access / 30-day refresh token (2026-11-14).",
+        "file_bridge_traversal": "path:['../proc/uptime'] -> ret:true with content; path:'../proc/uptime' -> ret:false 'invalid path' (2026-11-14).",
+        "root": "One-shot uid-0 postinst verified 2026-11-14 (Uid 0, CapEff 000001ffffffffff) after fixing the IPK for the vendor opkg (AppId/AppName + non-empty data.tar.gz). No boot persistence and no shell; /config remounts rw and back cleanly as root."
+      }
     }
   ]
 }
