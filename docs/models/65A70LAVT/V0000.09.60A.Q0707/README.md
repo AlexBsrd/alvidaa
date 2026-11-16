@@ -11,10 +11,10 @@ re-verified. Every claim is *community reported* or *static analysis*, never
 > differs from both: boot-persistent here, one-shot on `55U67LEVS`, not
 > attempted on `43A5LE`.
 
-> **Contributed by Cameron ([@sl3yr84](https://github.com/sl3yr84)).** Own
-> device, 22 documents from a Claude-assisted session, closed when the TV was
-> destroyed. Redacted for publication; the working payloads and the
-> unredacted notes stay private.
+> **Contributed by Cameron (`@sl3yr84`, via Telegram).** Own device, 22
+> documents from a Claude-assisted session, closed when the TV was destroyed.
+> Redacted for publication; the working payloads and the unredacted notes stay
+> private.
 
 ## Device fingerprint
 
