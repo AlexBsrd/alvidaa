@@ -102,10 +102,9 @@ TV Browser page (launcher/probes/08-ipk.html)
 
 The kit is [tools/65a85q](../../../../tools/65a85q/README.md): `boot.sh`
 (single source of truth for the PFM payload), `svc.sh`, `rshell.sh`,
-`rshell.js`, `phonehome.sh`, `alive.sh`. The IPK builder is
-`tools/tv_ipk.py` with `tools/alvidaa_ipk/postinst.sh`; the page is
-[launcher/probes/08-ipk.html](../../../../launcher/probes/08-ipk.html);
-the shell client is `tools/tvsh.py`.
+`rshell.js`, `phonehome.sh`, `alive.sh`. The IPK builder and the one-shot
+postinst are not published; the chain above is the description. The shell
+client is `tools/tvsh.py`.
 
 ## Behaviour of the vendor store agent (`alpac-agent` v3)
 
