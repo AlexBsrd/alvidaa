@@ -56,35 +56,6 @@ marginal benefit to an owner who wants to understand their own TV is zero.
 It explains the shape of the failure, which is what transfers to the next
 model, instead of a sequence of commands that only works on one build.
 
-## New technique classes
-
-A class that's already written up, or already patched, goes in as soon as it's
-measured. A **new** one — something the repo hasn't recorded before, especially
-if it needs no auth or no LAN access — gets named but not described until VIDAA
-has had a look.
-
-That's it. The finding goes out now; the working chain waits. If they patch it,
-write the rest up. If they don't answer after a reasonable window, write it up
-anyway and say they didn't answer. They don't get a veto — the heads-up is a
-courtesy, not a gate.
-
-The test for whether you're on the right side of the line: could someone
-rebuild the primitive from what you published? If yes, you've published a
-payload with extra steps.
-
-The only thing that never goes in is key material and a ready-to-run script.
-That's not a disclosure question — it's not research.
-
-Ticket: `VIDAA-PSIRT-2026-005`. Put the date in the guide.
-
-## Teardown is not optional
-
-Reversibility is the design law, and it is what makes the repository
-defensible. A guide without a rollback is incomplete, regardless of how good
-the finding is. State how to undo every state change the guide describes, or
-state plainly that it cannot be undone and why. A guide that leaves a unit
-modified with no way back is a liability, not a contribution.
-
 ## Verification labels
 
 | Label | Means |
