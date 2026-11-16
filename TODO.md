@@ -186,6 +186,26 @@ first**, which is the strongest signal in the list.
       community reports; the site could render "verified" and "unconfirmed" as
       two tables from the same JSON, and the README could keep only the
       verified ones with a link to the rest.
+- [ ] **Technique × build status view — build it when closed lanes start
+      reporting.** The matrix says what worked on each unit; it does not say
+      whether a lane is still open on a newer build. A generated table (last
+      build observed working, first build observed closed, vendor ticket)
+      would answer that — but only once there are negatives to compare
+      against. *Trigger:* the first technique with a positive on one build and
+      a negative on another. Until then every row is `unknown`, which is the
+      honest value anyway.
+      Why not a hand-maintained "fixed" column: "fixed" is a property of a
+      technique on a build, not of a firmware version, and OTA stagger means
+      two units of the same model sit on different builds. A fix is only
+      provable by a negative test on that exact build; absence of a report is
+      not evidence of a fix. Map the vendor ticket to the technique, not the
+      firmware — `VIDAA-PSIRT-2026-005` covers two different things (the root
+      path and the MQTT auth issue). Generate from `inventory.json`; the only
+      manual field is the ticket map, which changes a few times a year.
+      *Cheap prep now:* when a closed-lane report arrives, require the exact
+      firmware string and the technique token in the row. That pair is the
+      datapoint, and it is what the future generator reads. A "didn't work on
+      my TV" comment without the build string is useless in six months.
 - [ ] **75UR9S OTA freeze.** The record relies on the owner's settings-menu
       toggle. Write the router-side block down as the recommended steady state,
       and note that `/var/local/etc/resolv.conf` is a writable symlink — a
