@@ -358,13 +358,14 @@ test('render keeps the dock design, scales it and never loads the open web', () 
   assert.ok(texts.includes('TV'));
   assert.ok(texts.includes('connected'));
   assert.equal(flat.filter(n => ['canvas', 'iframe', 'img', 'script'].includes(n.tag)).length, 0);
+  const scale = 1280 / 1920;
   const title = flat.find(n => (n.children || []).includes('INPUTS & SOURCES'));
-  assert.equal(title.data.style.fontSize, 22 * 1280 / 1920 + 'px');
+  assert.equal(title.data.style.fontSize, 16 * scale + 'px');
   // Lengths scale with the viewport; font weights must not.
-  assert.equal(title.data.style.lineHeight, 26 * 1280 / 1920 + 'px');
-  const clock = flat.find(n => n.data && n.data.style && n.data.style.letterSpacing);
+  assert.equal(title.data.style.lineHeight, 20 * scale + 'px');
+  const clock = flat.find(n => n.data && n.data.attrs && n.data.attrs['data-clock']);
   assert.equal(clock.data.style.fontWeight, '300');
-  assert.equal(clock.data.style.lineHeight, 120 * 1280 / 1920 + 'px');
+  assert.equal(clock.data.style.lineHeight, 68 * scale + 'px');
   assert.equal(v.overlay, false);
   assert.doesNotMatch(JSON.stringify(tree), /cdn\.example/);
   // The focused dock tile lifts; the others stay put.
@@ -424,14 +425,14 @@ test('icon policy: local files and the vendor host only', () => {
   v.stop();
 });
 
-test('the dock pages six at a time and the wallpaper is a build-time global', () => {
+test('the dock pages five sculptural cards at a time and the wallpaper is a build-time global', () => {
   const f = setup(), v = f.instance;
   v.start();
   v.sources = Array.from({ length: 8 }, (_, i) => ({ sourceId: i, name: 'In ' + i }));
   const draw = () => f.component.render.call(v, (tag, data, children) => ({ tag, data, children }));
   const flat = flatten(draw());
-  const tiles = flat.filter(n => (n.children || []).some(c => c === 'LIVE' || c === 'STANDBY'));
-  assert.equal(tiles.length, 6);
+  const tiles = flat.filter(n => n.data && n.data.attrs && n.data.attrs['data-dock-tile'] === 'true');
+  assert.equal(tiles.length, 5);
   assert.ok(flat.some(n => n.data && n.data.style && n.data.style.backgroundImage &&
     n.data.style.backgroundImage.indexOf('linear-gradient(180deg, rgba(56,189,248') === 0));
   f.root.AlvidaaNativeWallpaper = 'data:image/png;base64,AAA';
@@ -484,7 +485,8 @@ test('build refuses an unpinned stock bundle and assembles a runnable candidate'
   const candidate = build(stockFile, null, digest);
   assert.ok(candidate.startsWith('/* ' + MARKER));
   assert.ok(candidate.includes(stock));
-  assert.ok(candidate.includes('AlvidaaNativeWallpaper="data:image/png;base64,'));
+  assert.match(candidate, /AlvidaaNativeWallpaper="data:image\/(png|jpeg);base64,/);
+  assert.ok(candidate.includes('AlvidaaNativeWallpapers='));
   for (const part of PARTS) assert.ok(candidate.includes(part));
   const context = {
     key: { KEYMAP: {} },
@@ -641,7 +643,7 @@ test('favorites: resolves favorites in order, drops stale IDs silently, and caps
   v.stop();
 });
 
-test('favorites: tiles render the real icon through the allowlist and fall back to the star', () => {
+test('favorites: tiles render the real icon via Cobalt-safe backgroundImage and fall back to a brand badge', () => {
   const f = setup({
     storage: {
       alvidaa_favorites: ['1', '2']
@@ -652,15 +654,17 @@ test('favorites: tiles render the real icon through the allowlist and fall back 
   assert.equal(items[0].icon, 'file:///hisenseUI/var/local/storeAppIcon/netflix.png',
     'a local icon passes the allowlist onto the favorite tile');
   assert.equal(items[1].icon, '',
-    'a remote-only icon is refused, so the star glyph is the fallback');
+    'a remote-only icon is refused, so the brand badge is the fallback');
   const draw = () => f.component.render.call(v, (tag, data, children) => ({ tag, data, children }));
   const flat = flatten(draw());
-  const imgs = flat.filter(n => n.tag === 'img');
-  assert.equal(imgs.length, 1, 'only the allowlisted favorite renders an <img>');
-  assert.equal(imgs[0].data.attrs.src, 'file:///hisenseUI/var/local/storeAppIcon/netflix.png');
-  assert.equal(imgs[0].data.style.objectFit, 'contain');
-  assert.ok(flat.some(n => (n.children || []).includes('\u2605')),
-    'the refused favorite still renders the star glyph');
+  assert.equal(flat.filter(n => n.tag === 'img').length, 0,
+    'never uses <img> for favorite icons (Cobalt fails to paint cached icons on <img>)');
+  const favIcons = flat.filter(n => n.data && n.data.attrs && n.data.attrs['data-favorite-icon'] === 'true');
+  assert.equal(favIcons.length, 1, 'only the allowlisted favorite renders a backgroundImage icon');
+  assert.equal(favIcons[0].data.style.backgroundImage, 'url("file:///hisenseUI/var/local/storeAppIcon/netflix.png")');
+  assert.equal(favIcons[0].data.style.backgroundSize, 'contain');
+  const plexBadge = flat.find(n => n.data && n.data.style && n.data.style.backgroundColor === '#e5a00d');
+  assert.ok(plexBadge, 'the refused favorite renders a brand-coloured monogram badge');
   v.stop();
 });
 
@@ -1284,7 +1288,7 @@ test('settings: the only-list row appears only when set and OK clears it', () =>
   w.start();
   openSettings(w);
   const rows = w.settingsRows();
-  assert.equal(rows.length, 6, 'five root rows plus the recently-used toggle');
+  assert.equal(rows.length, 8, 'root rows including only-list, idle, clock format, backdrop, and recently-used');
   assert.equal(rows[3].kind, 'only-list');
   w.settingsIndex = 3;
   w.handleKey(k.ENTER);
@@ -1533,23 +1537,23 @@ test('first frame: the dock paints placeholder tiles at final geometry before th
   // real tile occupies, carrying the fallback silhouette, and no verdict.
   let flat = flatten(draw());
   let ph = placeholders(flat);
-  assert.equal(ph.length, 6, 'one full page of placeholders');
+  assert.equal(ph.length, 5, 'one full page of sculptural placeholders');
   assert.ok(!texts(flat).includes('no inputs reported'),
     'pre-payload is not a verdict about the inputs');
   assert.ok(!texts(flat).includes('TV'), 'no real tiles yet');
   const phTile = ph[0].data.style;
   assert.equal(phTile.left, '112px');
-  assert.equal(phTile.top, '848px');
-  assert.equal(phTile.width, '264px');
-  assert.equal(phTile.height, '180px');
+  assert.equal(phTile.top, '714px');
+  assert.equal(phTile.width, '320px');
+  assert.equal(phTile.height, '248px');
   assert.equal(phTile.borderRadius, '28px');
-  assert.equal(phTile.backgroundImage, 'linear-gradient(180deg, #161b24, #0d1017)');
-  assert.equal(ph[1].data.style.left, '396px', 'page pitch matches the real dock');
+  assert.equal(phTile.backgroundColor, 'rgba(14,18,28,0.78)');
+  assert.equal(ph[1].data.style.left, '456px', 'page pitch matches the real dock (112 + 320 + 24)');
   // The fallback shape sits in the same 56px box at the same offsets the real
   // tile's shape container uses, so the swap changes nothing but the shape.
   const shapeBox = flat.find(n => n.data && n.data.style &&
     n.data.style.width === '56px' && n.data.style.height === '56px' &&
-    n.data.style.top === '40px' && n.data.style.left === '104px');
+    n.data.style.top === '72px' && n.data.style.left === '132px');
   assert.ok(shapeBox, 'the placeholder carries a shape container');
   const primitive = flatten(ph[0]).find(n => n.data && n.data.style &&
     (/(^|;|\s)border:/.test(String(n.data.style.border || '')) || n.data.style.backgroundColor));
@@ -1568,13 +1572,13 @@ test('first frame: the dock paints placeholder tiles at final geometry before th
   flat = flatten(draw());
   assert.equal(placeholders(flat).length, 0, 'placeholders unmount with the payload');
   const tiles = flat.filter(n => n.data && n.data.attrs &&
-    n.data.attrs.role === 'button' && n.data.style.top === '848px');
+    n.data.attrs.role === 'button' && n.data.style.top === '714px');
   assert.equal(tiles.length, 2, 'real dock tiles render');
   assert.equal(tiles[0].data.style.left, '112px', 'same geometry as the placeholder');
   const realShapeBox = flat.find(n => n.data && n.data.style &&
     n.data.style.width === '56px' && n.data.style.height === '56px' &&
-    n.data.style.top === '40px' && n.data.style.left === '104px');
-  assert.ok(realShapeBox, 'the real tile draws its shape in the same box');
+    n.data.style.top === '74px' && n.data.style.left === '132px');
+  assert.ok(realShapeBox, 'the real tile draws its shape in the same column');
   assert.ok(texts(flat).includes('PlayStation 5'));
 
   // A re-activated instance keeps its sources even before the next payload:
@@ -1881,15 +1885,15 @@ test('groups: the grouped overlay renders headers and cells from one focus path'
   assert.ok(texts.includes('First') && texts.includes('Second'), 'both headers render');
   // Scope to the overlay panel: the dock keeps rendering underneath it, and
   // its tiles are role=button too.
-  const panel = flat.find(n => n.data && n.data.style &&
-    n.data.style.borderRadius === '48px' && n.data.style.backgroundColor === 'rgba(14,18,26,0.97)');
+  const panel = flat.find(n => n.data && n.data.attrs &&
+    n.data.attrs['data-overlay-panel'] === 'true');
   assert.ok(panel, 'the overlay panel renders');
   const cells = flatten(panel).filter(n => n.data && n.data.attrs &&
     n.data.attrs.role === 'button' && n.data.style.borderRadius === '24px');
   assert.equal(cells.length, 4, 'all four apps render as overlay cells');
   // The focused cell is c: the lift treatment (hairline + sheen), not a ring —
   // non-focused siblings keep the quiet hairline.
-  assert.equal(cells.filter(n => n.data.style.border === '1px solid rgba(255,255,255,0.22)').length, 1,
+  assert.equal(cells.filter(n => n.data.style.border === '1px solid rgba(255,255,255,0.44)').length, 1,
     'exactly one focused cell — a single focus path');
   assert.equal(flat.filter(n => n.tag === 'img').length, 0, 'shapes and text only');
   v.stop();
@@ -1987,8 +1991,8 @@ test('the build bakes AlvidaaNativeAppColours when given, nothing when not', () 
 
 function overlayPanelOf(f, v) {
   return flatten(f.component.render.call(v, (tag, data, children) =>
-    ({ tag, data, children }))).find(n => n.data && n.data.style &&
-    n.data.style.borderRadius === '48px' && n.data.style.backgroundColor === 'rgba(14,18,26,0.97)');
+    ({ tag, data, children }))).find(n => n.data && n.data.attrs &&
+    n.data.attrs['data-overlay-panel'] === 'true');
 }
 function overlayCellsOf(panel) {
   return flatten(panel).filter(n => n.data && n.data.attrs &&
@@ -2007,18 +2011,18 @@ test('overlay visual: the focused tile lifts — hairline, sheen and scale, not 
   assert.equal(cells.length, 3);
   const focused = cells.find(n => n.data.attrs.tabindex === '0');
   const rest = cells.filter(n => n !== focused);
-  assert.equal(focused.data.style.transform, 'scale(1.03)', 'the focused tile is lifted');
-  assert.equal(focused.data.style.border, '1px solid rgba(255,255,255,0.22)',
-    'a hairline at low alpha, not the 2px white ring');
-  assert.equal(focused.data.style.boxShadow, '0 12px 28px rgba(0,0,0,0.5)', 'a soft shadow sells the depth');
-  const washOf = cell => flatten(cell).find(n => n.data && n.data.style &&
-    n.data.style.backgroundColor === 'rgba(255,255,255,0.10)');
-  assert.ok(washOf(focused), 'the focused tile carries an inner sheen');
+  assert.equal(focused.data.style.transform, 'scale(1.05)', 'the focused tile is lifted');
+  assert.equal(focused.data.style.border, '1px solid rgba(255,255,255,0.44)',
+    'a luminous hairline, not the 2px white ring');
+  assert.equal(focused.data.style.boxShadow, '0 18px 40px rgba(0,0,0,0.62)', 'a deep shadow sells the elevation');
+  const spotlightOf = cell => flatten(cell).find(n => n.data && n.data.style &&
+    String(n.data.style.backgroundImage || '').indexOf('radial-gradient(') === 0);
+  assert.ok(spotlightOf(focused), 'the focused tile carries a brand-tinted radial spotlight');
   for (const r of rest) {
     assert.equal(r.data.style.transform, 'scale(1)');
-    assert.equal(r.data.style.border, '1px solid rgba(255,255,255,0.05)');
-    assert.equal(r.data.style.boxShadow, '0 0 0 rgba(0,0,0,0)');
-    assert.equal(washOf(r), undefined, 'unfocused tiles have no sheen');
+    assert.equal(r.data.style.border, '1px solid rgba(255,255,255,0.08)');
+    assert.equal(r.data.style.boxShadow, '0 8px 20px rgba(0,0,0,0.32)');
+    assert.equal(spotlightOf(r), undefined, 'unfocused tiles have no focus spotlight');
   }
   assert.equal(flatten(panel).filter(n => n.data && n.data.style &&
     String(n.data.style.border || '').indexOf('2px solid #ffffff') >= 0).length, 0,
@@ -2026,7 +2030,7 @@ test('overlay visual: the focused tile lifts — hairline, sheen and scale, not 
   v.stop();
 });
 
-test('overlay visual: the header carries the count and the hint sits with it', () => {
+test('overlay visual: the header carries focused title, section badge, count and hint pill', () => {
   const f = setup(), v = f.instance;
   v.start();
   v.apps = Array.from({ length: 12 }, (_, i) => ({ appId: String(i), appName: 'App ' + i }));
@@ -2034,24 +2038,22 @@ test('overlay visual: the header carries the count and the hint sits with it', (
   v.overlayIndex = 0;
   const panel = overlayPanelOf(f, v);
   const texts = flatten(panel).flatMap(n => n.children || []).filter(c => typeof c === 'string');
-  assert.ok(texts.includes('APPS'), 'the title');
-  assert.ok(texts.includes(' \u00b7 12 apps'), 'the count rides after the title');
+  assert.ok(texts.includes('App 0'), 'the focused app names the editorial header');
+  assert.ok(texts.includes('APPS'), 'the section pill reads APPS in flat mode');
+  assert.ok(texts.includes('1 of 12 apps'), 'the position and total count ride in the header');
   const hint = flatten(panel).find(n => (n.children || []).includes('OK to open \u00b7 BACK to close'));
-  assert.ok(hint, 'the hint renders');
-  assert.equal(hint.data.style.fontSize, '16px', 'quieter than before');
-  assert.equal(hint.data.style.fontWeight, '400');
-  assert.equal(hint.data.style.left, '56px', 'on the header\'s left edge');
-  assert.equal(hint.data.style.top, '64px', 'under the title, not floating at the right edge');
-  // Grouped mode names the focused section in the title.
+  assert.ok(hint, 'the hint pill renders');
+  assert.equal(hint.data.style.borderRadius, '18px', 'framed as a subtle glass pill');
+  // Grouped mode names the focused section in the section pill.
   const g = setup(), w = g.instance;
   w.start();
   w.apps = ['a', 'b', 'c', 'd'].map(id => ({ appId: id, appName: 'App ' + id }));
   w.prefs.groups = [{ name: 'Media', apps: ['a', 'b'] }, { name: 'Games', apps: ['c', 'd'] }];
   w.overlay = true;
-  w.overlayIndex = 2; // c, in Media
+  w.overlayIndex = 2; // c, in Games
   const gTexts = flatten(overlayPanelOf(g, w)).flatMap(n => n.children || []).filter(c => typeof c === 'string');
-  assert.ok(gTexts.includes('Media'), 'the focused group names the header');
-  assert.ok(gTexts.includes(' \u00b7 4 apps'), 'the count is the whole shown list');
+  assert.ok(gTexts.includes('Games'), 'the focused group names the section pill');
+  assert.ok(gTexts.includes('3 of 4 apps'), 'the counter reflects the full shown list');
   v.stop(); w.stop();
 });
 
@@ -2073,7 +2075,7 @@ test('overlay visual: the grid gutters are equal at 1920', () => {
   assert.equal(row1[0], 56, 'left margin equals the gutter');
   assert.equal(1792 - (row1[6] + widths[0]), 56, 'right margin equals the gutter — the grid is centred');
   assert.deepEqual(row2, row1, 'the second row sits on the same columns');
-  assert.equal(tops[7] - tops[0], 160, 'rows sit on the 160px slot');
+  assert.equal(tops[7] - tops[0], 168, 'rows sit on the 168px slot');
   v.stop();
 });
 
@@ -2087,17 +2089,185 @@ test('overlay visual: a group heading gets more air above than the rows get betw
   const panel = overlayPanelOf(f, v);
   const cells = overlayCellsOf(panel);
   const tops = cells.map(n => px(n.data.style.top));
-  // First's three apps share one row — but the first slot in the panel is
-  // First's own heading band (80), so the row starts at 96 + 80.
-  assert.equal(tops[0], 176);
-  assert.equal(tops[3], 96 + 80 + 160 + 80, 'the Second heading band (80) sits between the rows');
+  // First's three apps share one row — the first slot is First's heading band (58),
+  // starting at listY (128).
+  assert.equal(tops[0], 128 + 58);
+  assert.equal(tops[3], 128 + 58 + 168 + 58, 'the Second heading band (58) sits between the rows');
   const heading = flatten(panel).find(n => (n.children || []).includes('Second'));
   const headingTop = px(heading.data.style.top);
-  const spaceAbove = headingTop - (tops[0] + 136); // tile height is 136
+  const spaceAbove = headingTop - (tops[0] + 144); // tile height is 144
   const below = tops[3] - (headingTop + 24);
-  assert.equal(spaceAbove, 64, 'the 24px row gap plus 40 more above the heading');
-  assert.equal(below, 16, 'and less below it');
-  const flatGap = 160 - 136;
+  assert.equal(spaceAbove, 42, 'the 24px row gap plus 18 more above the heading');
+  assert.equal(below, 16, 'and tighter below so the heading binds to its row');
+  const flatGap = 168 - 144;
   assert.ok(spaceAbove > flatGap, 'more space above the heading than the 24px gap between rows');
+  v.stop();
+});
+
+// ---- native UI upgrade: raster assets, view-2 paging, multi-row groups, 12h clock, settings polish ----
+
+test('raster hardware & door PNGs paint via backgroundImage and refuse SVG', () => {
+  const f = setup(), v = f.instance;
+  f.root.AlvidaaNativeDeviceArt = {
+    rules: [['(playstation)', 'gamepad-2']],
+    icons: { 'gamepad-2': 'data:image/svg+xml;base64,SVG', box: 'data:image/svg+xml;base64,SVG' },
+    fallback: 'box',
+    pngRules: [['(playstation)', 'ps5'], ['(fire tv)', 'fire-tv']],
+    pngs: {
+      ps5: 'data:image/png;base64,PS5PNG',
+      'fire-tv': 'data:image/svg+xml;base64,BADSVG',
+      hdmi: 'data:image/png;base64,HDMIPNG'
+    },
+    pngFallback: 'hdmi',
+    doors: {
+      apps: 'data:image/png;base64,APPSDOOR',
+      settings: 'data:image/png;base64,SETDOOR',
+      launcher: 'data:image/svg+xml;base64,BADSVG'
+    }
+  };
+  v.start();
+  assert.equal(v.deviceArtPng('PlayStation 5'), 'data:image/png;base64,PS5PNG');
+  assert.equal(v.deviceArtPng('Fire TV Stick'), '', 'SVG inside pngs is still refused');
+  assert.equal(v.deviceArtPng('HDMI6'), 'data:image/png;base64,HDMIPNG');
+  assert.equal(v.doorArtPng('apps'), 'data:image/png;base64,APPSDOOR');
+  assert.equal(v.doorArtPng('launcher'), '', 'SVG inside doors is refused');
+  const flat = flatten(f.component.render.call(v, (tag, data, children) => ({ tag, data, children })));
+  assert.equal(flat.filter(n => n.tag === 'img').length, 0, 'never paints via <img>');
+  const pngNodes = flat.filter(n => n.data && n.data.attrs && n.data.attrs['data-device-art'] === 'png');
+  assert.equal(pngNodes.length, 2, 'TV (fallback hdmi) and PlayStation 5 paint PNGs; Fire TV falls back to shapes');
+  const doorNodes = flat.filter(n => n.data && n.data.attrs && n.data.attrs['data-door-art']);
+  assert.equal(doorNodes.length, 2, 'apps and settings doors paint PNGs; launcher falls back to glyph');
+  v.stop();
+});
+
+test('view 2 pages horizontally so 5 favorites + 3 doors never clip past 1920px', () => {
+  const f = setup({ storage: { alvidaa_favorites: ['1', '2', '3', '4', '5'] } }), v = f.instance;
+  v.start();
+  v._lastData.apps = [1, 2, 3, 4, 5].map(n => ({ appId: String(n), appName: 'App ' + n }));
+  v.readPrefs();
+  assert.equal(v.appItems().length, 8, '5 favorites + 3 doors');
+  v.zone = 'apps';
+  v.app = 0;
+  const rowButtons = () => flatten(f.component.render.call(v, (tag, data, children) => ({ tag, data, children })))
+    .filter(n => n.data && n.data.attrs && n.data.attrs.role === 'button' && n.data.style.top === '1794px');
+  assert.equal(rowButtons().length, 5, 'pages 5 cards at a time');
+  assert.ok(rowButtons().every(b => px(b.data.style.left) + px(b.data.style.width) <= 1808));
+  v.app = 7; // Launcher door at the end
+  assert.equal(v.appStart(), 3);
+  const lastPage = rowButtons();
+  assert.equal(lastPage.length, 5);
+  assert.equal(lastPage[4].data.attrs['aria-label'], 'Launcher', 'Launcher door is visible on the final page');
+  assert.ok(lastPage.every(b => px(b.data.style.left) + px(b.data.style.width) <= 1808));
+  v.stop();
+});
+
+test('groups: UP/DOWN walk row-by-row inside multi-row groups and cross cleanly at edges', () => {
+  const f = setup(), v = f.instance, k = KEYS;
+  v.start();
+  v.apps = Array.from({ length: 18 }, (_, i) => ({ appId: 'a' + i, appName: 'App ' + i }));
+  v.prefs.groups = [{ name: 'Top', apps: ['a0', 'a1'] }]; // Remaining 16 land in "Other apps" (3 rows of 7/7/2)
+  v.overlay = true;
+  v.overlayIndex = 1; // Top[1]
+  v.handleKey(k.DOWN);
+  assert.equal(v.overlayIndex, 3, 'crosses from Top[1] to Other[1] (row 0, col 1)');
+  v.handleKey(k.DOWN);
+  assert.equal(v.overlayIndex, 10, 'steps down inside Other apps to row 1, col 1 (+7)');
+  v.handleKey(k.DOWN);
+  assert.equal(v.overlayIndex, 17, 'steps down inside Other apps to row 2, clamped to last app');
+  v.handleKey(k.DOWN);
+  assert.equal(v.overlayIndex, 17, 'clamps on the final row of the final group');
+  v.handleKey(k.UP);
+  assert.equal(v.overlayIndex, 10, 'steps back up inside Other apps (-7)');
+  v.handleKey(k.UP);
+  assert.equal(v.overlayIndex, 3, 'steps to row 0 of Other apps');
+  v.handleKey(k.UP);
+  assert.equal(v.overlayIndex, 1, 'crosses back up into Top[1]');
+  v.stop();
+});
+
+test('clock format: toggles 24-hour / 12-hour in Home settings and formats header & idle clock', () => {
+  const f = setup(), v = f.instance, k = KEYS;
+  v.start();
+  v.now = new Date(2026, 10, 19, 13, 5, 0);
+  assert.deepEqual(Object.assign({}, v.clockParts()), { h: '13', m: '05', ampm: '' });
+  openSettings(v);
+  const idx = v.settingsRows().findIndex(r => r.kind === 'clock12h');
+  assert.ok(idx > 0, 'Clock format row exists on root settings page');
+  assert.equal(v.settingsRows()[idx].value, '24-hour');
+  v.settingsIndex = idx;
+  v.handleKey(k.ENTER);
+  assert.equal(f.store.get('alvidaa_clock_12h'), 'true');
+  assert.equal(v.settingsRows()[idx].value, '12-hour');
+  assert.deepEqual(Object.assign({}, v.clockParts()), { h: '1', m: '05', ampm: 'PM' });
+  const flat = flatten(f.component.render.call(v, (tag, data, children) => ({ tag, data, children })));
+  assert.equal(flat.filter(n => n.data && n.data.style &&
+    String(n.data.style.border || '').includes('2px solid #ffffff')).length, 0,
+    'settings layer uses dark-glass elevation, zero 2px white rings');
+  v.stop();
+});
+
+test('auto-refresh: re-entering Home and 10s dock poll refresh CEC input names and swap device art live', () => {
+  const f = setup(), v = f.instance;
+  f.root.AlvidaaNativeDeviceArt = {
+    rules: [], icons: {}, fallback: 'box',
+    pngRules: [['(playstation)', 'ps5']],
+    pngs: { ps5: 'data:image/png;base64,PS5PNG', hdmi: 'data:image/png;base64,HDMIPNG' },
+    pngFallback: 'hdmi',
+    doors: {}
+  };
+  f.component.mounted.call(v);
+  assert.equal(f.calls.filter(c => c[0] === 'refresh').length, 0);
+  // Returning to an already-running keep-alive instance refreshes immediately.
+  f.component.activated.call(v);
+  assert.equal(f.calls.filter(c => c[0] === 'refresh').length, 1);
+  f.component.watch['$route'].call(v);
+  assert.equal(f.calls.filter(c => c[0] === 'refresh').length, 2);
+  // Sitting on the dock polls every 10 clock ticks; pauses while overlay/idle is open.
+  const tick = Array.from(f.timers.values())[0];
+  for (let i = 0; i < 10; i++) tick();
+  assert.equal(f.calls.filter(c => c[0] === 'refresh').length, 3);
+  v.overlay = true;
+  for (let i = 0; i < 10; i++) tick();
+  assert.equal(f.calls.filter(c => c[0] === 'refresh').length, 3, 'paused while overlay is open');
+  v.overlay = false;
+  // Simulate late-arriving CEC name on HDMI1: art upgrades live from hdmi -> ps5.
+  f.notify()({
+    apps: v.apps,
+    sources: [{ sourceId: 'HDMI1', name: 'HDMI1', is_signal: 1 }],
+    errors: [], waiting: false
+  });
+  assert.equal(v.deviceArtPng(v.sourceName(v.sources[0])), 'data:image/png;base64,HDMIPNG');
+  f.notify()({
+    apps: v.apps,
+    sources: [{ sourceId: 'HDMI1', name: 'HDMI1', displayname2: 'PlayStation 5', is_signal: 1 }],
+    errors: [], waiting: false
+  });
+  assert.equal(v.sourceName(v.sources[0]), 'PlayStation 5');
+  assert.equal(v.deviceArtPng(v.sourceName(v.sources[0])), 'data:image/png;base64,PS5PNG');
+  v.stop();
+});
+
+test('backdrop switcher: cycles bundled gallery wallpapers and minimal dark in Home settings', () => {
+  const f = setup(), v = f.instance, k = KEYS;
+  f.root.AlvidaaNativeWallpapers = {
+    default: 'fjord',
+    order: ['fjord', 'waves'],
+    labels: { fjord: 'Nordic Fjord', waves: 'Obsidian Waves' },
+    items: { fjord: 'data:image/jpeg;base64,FJORD', waves: 'data:image/jpeg;base64,WAVES' }
+  };
+  v.start();
+  assert.equal(v.activeWallpaper(), 'data:image/jpeg;base64,FJORD');
+  openSettings(v);
+  const idx = v.settingsRows().findIndex(r => r.kind === 'wallpaper');
+  assert.ok(idx > 0, 'Backdrop row exists on root settings page');
+  assert.equal(v.settingsRows()[idx].value, 'Nordic Fjord');
+  v.settingsIndex = idx;
+  v.handleKey(k.ENTER);
+  assert.equal(f.store.get('alvidaa_wallpaper'), '"waves"');
+  assert.equal(v.settingsRows()[idx].value, 'Obsidian Waves');
+  assert.equal(v.activeWallpaper(), 'data:image/jpeg;base64,WAVES');
+  v.handleKey(k.RIGHT);
+  assert.equal(v.settingsRows()[idx].value, 'Minimal Dark');
+  assert.equal(v.activeWallpaper(), '');
   v.stop();
 });

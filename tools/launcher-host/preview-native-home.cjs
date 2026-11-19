@@ -50,7 +50,8 @@ const wallpaper = require('./wallpaper.cjs');
 
 const HERE = __dirname;
 const SOURCE = fs.readFileSync(path.join(HERE, 'native-alvidaa.js'), 'utf8');
-const WALLPAPER_URI = 'data:image/png;base64,' + wallpaper.render().toString('base64');
+const WALLPAPER_BUNDLE = wallpaper.bundle();
+const WALLPAPER_URI = wallpaper.dataUri();
 
 const BANNER = 'stub preview — not device-verified';
 // Same vendor keycodes the component's tests use.
@@ -113,8 +114,12 @@ function fixtureTilePng(hex) {
       const cx = Math.min(x, size - 1 - x), cy = Math.min(y, size - 1 - y);
       const inside = cx + cy > 0 && (cx >= radius || cy >= radius ||
         (radius - 1 - cx) * (radius - 1 - cx) + (radius - 1 - cy) * (radius - 1 - cy) < radius * radius);
+      const lift = Math.max(0, 1 - (x + y) / (size * 1.4)) * 28;
       const at = row + 1 + x * 4;
-      raw[at] = r; raw[at + 1] = g; raw[at + 2] = b; raw[at + 3] = inside ? 255 : 0;
+      raw[at] = Math.min(255, Math.round(r + lift));
+      raw[at + 1] = Math.min(255, Math.round(g + lift));
+      raw[at + 2] = Math.min(255, Math.round(b + lift));
+      raw[at + 3] = inside ? 255 : 0;
     }
   }
   const table = (() => {
@@ -223,11 +228,18 @@ function fixturePayload() {
  * layers settings over a still-open overlay, but a reviewer asking for one
  * layer gets exactly that layer in the snapshot. Self-contained for
  * toString() embedding in the page. */
-const VIEWS = ['dock', 'overlay', 'settings', 'settings-apps'];
+const VIEWS = ['dock', 'apps-row', 'overlay', 'settings', 'settings-apps', 'settings-inputs', 'settings-name', 'idle'];
 
 function applyView(instance, view) {
   var v = instance;
-  if (view === 'overlay') {
+  v.idle = false;
+  v.idleFade = 1;
+  if (view === 'apps-row') {
+    v.settings = false;
+    v.overlay = false;
+    v.zone = 'apps';
+    v.app = 0;
+  } else if (view === 'overlay') {
     v.settings = false;
     v.zone = 'apps';
     v.app = 0;
@@ -240,6 +252,24 @@ function applyView(instance, view) {
     v.openLauncherSettings();
     v.settingsPage = 'apps';
     v.settingsIndex = 0;
+  } else if (view === 'settings-inputs') {
+    v.overlay = false;
+    v.openLauncherSettings();
+    v.settingsPage = 'inputs';
+    v.settingsIndex = 0;
+  } else if (view === 'settings-name') {
+    v.overlay = false;
+    v.openLauncherSettings();
+    v.settingsPage = 'name';
+    v.nameSourceId = 'HDMI2';
+    v.nameDraft = 'PLAYSTATION 5';
+    v.nameIndex = 39;
+  } else if (view === 'idle') {
+    v.settings = false;
+    v.overlay = false;
+    v.zone = 'dock';
+    v.idle = true;
+    v.idleFade = 1;
   } else { v.settings = false; v.overlay = false; v.zone = 'dock'; }
   return v;
 }
@@ -274,7 +304,10 @@ function loadFixtureComponent(options = {}) {
   };
   root._V_SDK_ = { vre: { SDK: () => sdk } };
   root.AlvidaaNativeDeviceArt = options.deviceArt || deviceArt.bundle();
-  if (options.wallpaper !== null) root.AlvidaaNativeWallpaper = options.wallpaper || WALLPAPER_URI;
+  if (options.wallpaper !== null) {
+    root.AlvidaaNativeWallpaper = options.wallpaper || WALLPAPER_URI;
+    if (!options.wallpaper) root.AlvidaaNativeWallpapers = WALLPAPER_BUNDLE;
+  }
   root.AlvidaaNativePlatform = (_sdk, callback) => {
     return {
       start() { callback(options.payload || fixturePayload()); calls.push(['start']); },
@@ -399,6 +432,7 @@ function buildPage(options = {}) {
     'var KEYS = ' + JSON.stringify(KEYS) + ';\n' +
     'var DEVICE_ART = ' + JSON.stringify(deviceArt.bundle()) + ';\n' +
     'var WALLPAPER = ' + JSON.stringify(WALLPAPER_URI) + ';\n' +
+    'var WALLPAPERS = ' + JSON.stringify(WALLPAPER_BUNDLE) + ';\n' +
     'var sdk = { key: { KEYMAP: KEYS },\n' +
     '  storage: { get: function (k) { return STORAGE[k]; }, set: function (k, val) { STORAGE[k] = val; } },\n' +
     '  apc: { CMDMETHOD: { KEY_INPUT_START: "input" } },\n' +
@@ -406,6 +440,7 @@ function buildPage(options = {}) {
     'window._V_SDK_ = { vre: { SDK: function () { return sdk; } } };\n' +
     'window.AlvidaaNativeDeviceArt = DEVICE_ART;\n' +
     'window.AlvidaaNativeWallpaper = WALLPAPER;\n' +
+    'window.AlvidaaNativeWallpapers = WALLPAPERS;\n' +
     'window.AlvidaaNativePlatform = function (_sdk, callback) {\n' +
     '  return { start: function () { callback(FIXTURE); }, stop: function () {}, refresh: function () {},\n' +
     '    launchApp: function () {}, changeSource: function () {}, openSettings: function () {} };\n' +
@@ -426,7 +461,7 @@ function buildPage(options = {}) {
     'function h(tag, data, children) { return { tag: tag, data: data, children: children }; }\n' +
     elementFrom.toString() + '\n' +
     materialize.toString() + '\n' +
-    'function draw() { rootEl.innerHTML = ""; rootEl.appendChild(materialize(elementFrom(component.render.call(v, h)), draw)); }\n' +
+    'function draw() { v.width = rootEl.clientWidth || window.innerWidth || 1920; rootEl.innerHTML = ""; rootEl.appendChild(materialize(elementFrom(component.render.call(v, h)), draw)); }\n' +
     // The component listens for the vendor's custom "key-down" event (mounted,
     // native-alvidaa.js:324) — real keypresses are "keydown" and never reach it,
     // so the page bridges them to handleKey itself (caught on the first real
@@ -476,9 +511,13 @@ function buildPage(options = {}) {
     '</style>\n</head>\n<body>\n' +
     '<div id="preview-controls">view:\n' +
     '<button class="pv-btn" data-view="dock">Dock</button>\n' +
+    '<button class="pv-btn" data-view="apps-row">Apps row</button>\n' +
     '<button class="pv-btn" data-view="overlay">Apps overlay</button>\n' +
     '<button class="pv-btn" data-view="settings">Settings</button>\n' +
     '<button class="pv-btn" data-view="settings-apps">Settings · Apps</button>\n' +
+    '<button class="pv-btn" data-view="settings-inputs">Settings · Inputs</button>\n' +
+    '<button class="pv-btn" data-view="settings-name">Rename</button>\n' +
+    '<button class="pv-btn" data-view="idle">Idle</button>\n' +
     '</div>\n' +
     '<div id="preview-stage"><div id="preview-root">' + snapshot + '</div></div>\n' +
     '<div id="preview-banner">' + escapeHtml(BANNER) + '</div>\n' +

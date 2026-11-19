@@ -33,6 +33,29 @@ Both clear the 3:1 WCAG 1.4.11 non-text minimum with room, and `#94a3b8` is
 already the dock's unfocused tile-label colour, so the silhouettes read as part
 of the design rather than an overlay.
 
+## Raster hardware, door & backdrop assets (`png/`, `wallpaper-*.jpg`)
+
+`findings 13 §8` measured on the `50A51HUV` Cobalt engine that SVG data URIs do
+not paint in `<img>` or `background-image`, whereas raster data URIs in
+`background-image` do paint reliably. `png/` holds 16 original minimalist
+studio-lit RGBA PNGs (`260×176`, transparent background, zero brand logos)
+baked by `device-art.cjs` into `self.AlvidaaNativeDeviceArt`:
+
+- **Connected hardware & non-HDMI inputs** (`pngs` + `pngRules`, fallback
+  `hdmi`): `ps5.png`, `switch.png`, `fire-tv.png`, `apple-tv.png`, `xbox.png`,
+  `screen-share.png`, `audio.png`, `pc.png`, `disc.png`, `usb.png`, `av.png`,
+  `tv.png`, `hdmi.png`.
+- **View-2 system doors** (`doors`): `door-apps.png`, `door-settings.png`,
+  `door-launcher.png`.
+- **Gallery backdrops** (`wallpaper.cjs` → `self.AlvidaaNativeWallpapers`):
+  `wallpaper-fjord.jpg` (`Nordic Fjord`, default) and `wallpaper-waves.jpg`
+  (`Obsidian Waves`), 1920×1080 baseline JPEGs selectable live alongside
+  `Minimal Dark` in Home Settings.
+
+The SVG silhouettes above remain vendored and tested for `device-art.cjs`
+compatibility; `native-alvidaa.js` only paints raster PNG/JPEG data URIs and
+falls back to scaled `div` shapes whenever `pngs` is absent.
+
 ## Licence
 
 Lucide is ISC; `cast`, `monitor` and `tv` are derived from the Feather project

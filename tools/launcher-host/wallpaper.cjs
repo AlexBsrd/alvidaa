@@ -9,10 +9,17 @@
  * indigo wash bottom-right for direction, a soft vignette, and a little grain
  * so large flat areas do not band on the panel.
  */
+const fs = require('node:fs');
+const path = require('node:path');
 const zlib = require('node:zlib');
 
 const WIDTH = 1920;
 const HEIGHT = 1080;
+const ART_DIR = path.join(__dirname, 'input-art');
+const PRESETS = [
+  { id: 'fjord', label: 'Nordic Fjord', file: 'wallpaper-fjord.jpg' },
+  { id: 'waves', label: 'Obsidian Waves', file: 'wallpaper-waves.jpg' }
+];
 
 const CRC_TABLE = (() => {
   const table = new Int32Array(256);
@@ -53,9 +60,11 @@ function glow(x, y, cx, cy, radius, color, strength) {
 function render() {
   const stride = WIDTH * 3 + 1;
   const raw = Buffer.alloc(stride * HEIGHT);
+  const sapphire = [56, 128, 224];
   const cyan = [56, 189, 248];
   const indigo = [99, 102, 241];
-  const base = [7, 8, 12];
+  const slate = [68, 92, 184];
+  const base = [8, 11, 18];
 
   for (let y = 0; y < HEIGHT; y++) {
     const row = y * stride;
@@ -63,22 +72,25 @@ function render() {
     for (let x = 0; x < WIDTH; x++) {
       let r = base[0], g = base[1], b = base[2];
 
-      const top = glow(x, y, WIDTH * 0.5, -HEIGHT * 0.15, WIDTH * 0.95, cyan, 0.10);
-      if (top) { r += top[0]; g += top[1]; b += top[2]; }
+      const dome = glow(x, y, WIDTH * 0.68, -HEIGHT * 0.08, WIDTH * 0.92, sapphire, 0.22);
+      if (dome) { r += dome[0]; g += dome[1]; b += dome[2]; }
 
-      const topIndigo = glow(x, y, WIDTH * 0.35, -HEIGHT * 0.05, WIDTH * 0.75, indigo, 0.06);
-      if (topIndigo) { r += topIndigo[0]; g += topIndigo[1]; b += topIndigo[2]; }
+      const rim = glow(x, y, WIDTH * 0.56, -HEIGHT * 0.14, WIDTH * 0.62, cyan, 0.11);
+      if (rim) { r += rim[0]; g += rim[1]; b += rim[2]; }
 
-      const corner = glow(x, y, WIDTH, HEIGHT, WIDTH * 0.85, indigo, 0.12);
+      const horizon = glow(x, y, WIDTH * 0.22, HEIGHT * 0.78, WIDTH * 0.78, indigo, 0.15);
+      if (horizon) { r += horizon[0]; g += horizon[1]; b += horizon[2]; }
+
+      const corner = glow(x, y, WIDTH * 0.88, HEIGHT * 0.96, WIDTH * 0.72, slate, 0.12);
       if (corner) { r += corner[0]; g += corner[1]; b += corner[2]; }
 
-      // Vignette: darken toward the edges.
+      // Vignette: darken toward the outer frame without crushing the studio dome.
       const vx = (x - WIDTH / 2) / (WIDTH / 2);
       const vy = (y - HEIGHT / 2) / (HEIGHT / 2);
-      const vignette = 1 - 0.35 * Math.min(1, Math.sqrt(vx * vx + vy * vy));
+      const vignette = 1 - 0.30 * Math.min(1, Math.sqrt(vx * vx + vy * vy));
       r *= vignette; g *= vignette; b *= vignette;
 
-      // Deterministic grain, +-2, so gradients do not band.
+      // Deterministic grain, +-1.5, so 8-bit gradients do not band on the panel.
       const noise = ((x * 73856093) ^ (y * 19349663)) & 3;
       r += noise - 1.5; g += noise - 1.5; b += noise - 1.5;
 
@@ -104,9 +116,47 @@ function render() {
   ]);
 }
 
-module.exports = { render, WIDTH, HEIGHT };
+const DATA_URI_CACHE = new Map();
+
+function dataUri(id) {
+  const key = id || PRESETS[0].id;
+  if (DATA_URI_CACHE.has(key)) return DATA_URI_CACHE.get(key);
+  const preset = PRESETS.find(p => p.id === key);
+  if (preset) {
+    const file = path.join(ART_DIR, preset.file);
+    if (fs.existsSync(file)) {
+      const uri = 'data:image/jpeg;base64,' + fs.readFileSync(file).toString('base64');
+      DATA_URI_CACHE.set(key, uri);
+      return uri;
+    }
+  }
+  const fallback = 'data:image/png;base64,' + render().toString('base64');
+  DATA_URI_CACHE.set(key, fallback);
+  return fallback;
+}
+
+function bundle() {
+  const items = {};
+  const labels = {};
+  for (const preset of PRESETS) {
+    const file = path.join(ART_DIR, preset.file);
+    if (fs.existsSync(file)) {
+      items[preset.id] = dataUri(preset.id);
+      labels[preset.id] = preset.label;
+    }
+  }
+  const order = Object.keys(items);
+  return {
+    default: order[0] || 'minimal',
+    order,
+    labels,
+    items
+  };
+}
+
+module.exports = { render, dataUri, bundle, PRESETS, WIDTH, HEIGHT };
 
 if (require.main === module) {
-  const png = render();
-  console.log('wallpaper: ' + WIDTH + 'x' + HEIGHT + ', ' + png.length + ' bytes');
+  const b = bundle();
+  console.log('wallpapers: ' + b.order.map(k => k + '=' + Math.round(b.items[k].length / 1024) + 'KB').join(', '));
 }

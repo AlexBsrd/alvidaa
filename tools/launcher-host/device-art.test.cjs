@@ -83,3 +83,39 @@ test('dataUriFor produces a base64 SVG data URI that round-trips, coloured, scri
   assert.doesNotMatch(decoded, /<script/i, 'no script can ride in an icon');
   assert.equal(dataUriFor(''), null, 'an empty name has no URI, like artForName');
 });
+
+test('raster hardware & door PNG assets exist, are valid PNGs, and map living-room names', () => {
+  const { pngForName, bundle, PNG_DIR, DOORS } = require('./device-art.cjs');
+  const pngs = fs.readdirSync(PNG_DIR).filter(f => f.endsWith('.png'));
+  assert.ok(pngs.length >= 16, 'expected 13 hardware + 3 door PNGs, got ' + pngs.length);
+  for (const file of pngs) {
+    const buf = fs.readFileSync(path.join(PNG_DIR, file));
+    assert.deepEqual([...buf.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+      file + ': valid PNG signature');
+  }
+  const cases = [
+    ['PlayStation 5', 'ps5'], ['PS5', 'ps5'],
+    ['Nintendo Switch', 'switch'],
+    ['Xbox Series X', 'xbox'],
+    ['Apple TV', 'apple-tv'], ['AirPlay', 'apple-tv'],
+    ['Fire TV Stick', 'fire-tv'], ['Chromecast', 'fire-tv'],
+    ['Screen Sharing', 'screen-share'], ['Miracast', 'screen-share'],
+    ['Music Sharing', 'audio'], ['Bluetooth Speaker', 'audio'], ['eARC Soundbar', 'audio'],
+    ['Steam Machine', 'pc'], ['Mini PC', 'pc'],
+    ['Blu-ray Player', 'disc'],
+    ['USB Drive', 'usb'], ['Media', 'usb'],
+    ['AV', 'av'], ['AVS', 'av'],
+    ['TV Channels▶', 'tv'], ['TV', 'tv'],
+    ['HDMI6', 'hdmi'], ['HDMI2', 'hdmi']
+  ];
+  for (const [name, expected] of cases) {
+    const hit = pngForName(name);
+    assert.ok(hit, name + ': should resolve a PNG asset');
+    assert.equal(hit.asset, expected, name + ' -> ' + expected);
+    assert.match(hit.dataUri, /^data:image\/png;base64,/);
+  }
+  const b = bundle();
+  for (const kind of Object.keys(DOORS)) {
+    assert.match(b.doors[kind], /^data:image\/png;base64,/, 'door ' + kind + ' bundled as PNG');
+  }
+});

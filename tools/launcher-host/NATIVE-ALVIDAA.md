@@ -14,25 +14,29 @@ The design is the canvas launcher's r4 layout, ported to DOM:
 
 | Piece | Where |
 | --- | --- |
-| clock and date | top left, hours/minutes hierarchy, uppercase date |
-| inputs dock | bottom edge, five 320×176 tiles per page |
-| big label | the focused input's real name above the dock, `connected` / `no signal` under it |
-| Apps tile | one door; opens the app list as an overlay, 5-column grid |
+| clock and date | top right, quiet light-weight hours/minutes hierarchy (`12h` or `24h`), uppercase date underneath |
+| inputs dock | bottom edge, five sculptural 320×248 dark-glass cards per page with studio-lit connected-device PNG renders (`ps5`, `switch`, `fire-tv`, `apple-tv`, `xbox`, `screen-share`, `audio`, `pc`, `disc`, `usb`, `av`, `tv`, `hdmi`) and automatic input-name refresh on return + 10 s awake poll |
+| big label | focused input's clean device name above the dock, `connected` / `no signal` + port tag + `Press [OK] to switch` cue |
+| Apps row (view 2) | horizontally paged (5 per page) row of pinned favorites (Cobalt-safe `backgroundImage` icons inside squircle plates + brand monogram fallback) and studio-icon `Apps`, `Settings`, and `Launcher` doors |
+| Apps overlay | dark-glass gallery drawer (`1792×896`) with focused-app editorial header, brand-tinted ambient spotlight, 7-column 8px-rhythm grid, framed squircle tiles, multi-row group navigation, pixel-budget windowing, and scrollbar |
 | recently-used order | the apps overlay lists launched apps newest-first (`alvidaa_recent`); toggle in Home settings, on by default |
 | Settings tile | opens the real stock TV Settings |
-| Launcher tile | one more door in view 2 (`☰`, "Home settings"); opens this component's own settings surface |
+| Launcher tile | opens this component's own dark-glass Home settings surface (auto-switch, apps, input names, idle screen, clock format, gallery backdrop switcher, recently-used order) |
 | toast HUD | bottom center, floating glass pill for action feedback and alerts (default 2500ms, timed expiry) |
 | number hotkeys | remote keys 1-9 focus & activate dock tiles 1-9; key 0 focuses dock 0 without activating |
 | auto-switch HUD | floating glass pill counting down boot switch when exactly one input has signal |
+| idle screen | active backdrop + gently drifting OLED-safe clock after `alvidaa_idle_minutes` (wake key only wakes) |
 
 Two views, panned vertically like the canvas: view 1 is the dock, view 2 is the
 apps row. ArrowDown pans, ArrowUp or Back pans back. Back at the dock is handed
 to the vendor, so the stock behaviour from Home still works.
 
 No canvas, no iframe, no global CSS. Everything is inline style plus CSS
-gradients, which the 75U8QTUK findings confirmed paint on this engine. The
-wallpaper is a PNG generated at build time and inlined as a data URI, so the
-candidate stays one self-contained file and the repo carries no image asset.
+gradients and raster data URIs in `background-image` (`findings 13 §8`), which
+paint reliably on Cobalt. Curated 1920×1080 gallery backdrops (`Nordic Fjord`
+and `Obsidian Waves`, baseline JPEGs with procedural PNG fallback) plus the
+16 studio hardware/door PNGs are inlined at build time so the candidate stays
+one self-contained offline file.
 
 The one network path is the vendor's own icon host, and only that host. See
 *Icons* below.
@@ -313,6 +317,7 @@ note that static custom names can go stale if the physical device changes.
 | `alvidaa_last_used` | string / number | `null` | Last activated input `sourceId`, persisted on dock activation and used as `smartIndex()` fallback when no input has signal. |
 | `alvidaa_auto_switch` | boolean | `false` | Opt-in toggle for automatic input switching on boot. |
 | `alvidaa_idle_minutes` | number | `0` | Minutes of no key and no source change before the Home fades to the idle layer; `0` is off (issue #58). |
+| `alvidaa_clock_12h` | boolean | `false` | When `true`, renders header and idle clocks in 12-hour format with `AM`/`PM`; default is 24-hour. |
 | `alvidaa_recent` | object | `{}` | Map of app id to last-launch epoch ms, pruned to the 40 newest; drives the overlay's recently-used ordering (issue #55). |
 | `alvidaa_recent_order` | boolean | `true` | When off, the apps overlay keeps vendor order and launches are not recorded. |
 | `alvidaa_favorites` | array of strings | `[]` | Pinned favorite app IDs in view 2 (max 5), launched directly. Stale IDs dropped silently. |

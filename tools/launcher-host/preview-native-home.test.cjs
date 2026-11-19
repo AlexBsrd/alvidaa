@@ -78,10 +78,11 @@ test('renderSnapshot converts the tree into DOM-shaped objects', () => {
   const flat = f.flat();
   assert.ok(flat.some(n => n.text === 'APPS'), 'text children become text specs');
   assert.ok(flat.some(n => typeof n.onClick === 'function'), 'on.click survives as onClick');
-  const img = flat.find(n => n.tag === 'img');
-  assert.ok(img, 'the favorite with an allowlisted icon renders an <img> spec');
-  assert.match(img.attributes.src, /^data:image\/png;base64,/);
-  assert.equal(img.attributes.alt, 'Netflix');
+  const favIcon = flat.find(n => n.attributes && n.attributes['data-favorite-icon'] === 'true');
+  assert.ok(favIcon, 'the favorite with an allowlisted icon renders via Cobalt-safe backgroundImage');
+  assert.match(favIcon.style.backgroundImage, /^url\("data:image\/png;base64,/);
+  assert.equal(favIcon.attributes['aria-label'], 'Netflix');
+  assert.equal(flat.filter(n => n.tag === 'img').length, 0, 'zero <img> tags (Cobalt-safe)');
   const px = flat.find(n => typeof (n.style || {}).fontSize === 'string' && /px$/.test(n.style.fontSize));
   assert.ok(px, 'numeric style values resolve to px strings');
   const unitless = flat.find(n => typeof (n.style || {}).opacity === 'number');
@@ -89,13 +90,16 @@ test('renderSnapshot converts the tree into DOM-shaped objects', () => {
   f.instance.stop();
 });
 
-test('device shapes are divs, not images (findings 13 section 8)', () => {
+test('device art paints as PNG backgroundImage with zero SVG elements (findings 13 section 8)', () => {
   const f = load();
   const flat = f.flat();
-  const shapes = flat.filter(n => (n.style || {}).border && /solid/.test(n.style.border) &&
-    (n.style || {}).position === 'absolute');
-  assert.ok(shapes.length > 10, 'the dock device icons are border/background divs');
+  const pngTiles = flat.filter(n => n.attributes && n.attributes['data-device-art'] === 'png');
+  assert.equal(pngTiles.length, 5, 'five sculptural dock cards carry PNG hardware assets');
+  for (const tile of pngTiles) {
+    assert.match(tile.style.backgroundImage, /^url\("data:image\/png;base64,/);
+  }
   assert.equal(flat.filter(n => n.tag === 'svg').length, 0, 'no SVG elements anywhere');
+  assert.equal(flat.filter(n => n.tag === 'img').length, 0, 'no <img> elements anywhere');
   f.instance.stop();
 });
 
@@ -272,11 +276,12 @@ test('--out writes one self-contained file with the banner and the fixture', () 
     assert.ok(html.includes('PlayStation 5') && html.includes('Nintendo Switch'), 'fixture device names');
     assert.ok(html.includes('AlvidaaNativeHome(sdk)'), 'the real component source is embedded');
     assert.ok(html.includes('data:image/svg+xml;base64,'), 'the real baked device-art rules are embedded');
-    assert.ok(html.includes('iVBORw0KGgo'), 'the generated wallpaper is embedded');
+    assert.match(html, /data:image\/(png|jpeg);base64,/, 'the baked wallpaper is embedded');
+    assert.ok(html.includes('AlvidaaNativeWallpapers'), 'the wallpaper preset pack is embedded');
     assert.ok(html.includes('function elementFrom('), 'the h→element converter is embedded for the live redraw');
     // The server-side snapshot is real markup, so the page renders even with JS off.
     assert.match(html, /<div id="alvidaa-native" style="position: absolute;/);
-    assert.ok(html.includes('border: 3px solid'), 'rendered device-shape borders are in the static markup');
+    assert.ok(html.includes('data-device-art="png"'), 'rendered raster hardware assets are in the static markup');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

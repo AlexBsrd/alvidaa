@@ -19,10 +19,12 @@ function build(stockFile, output, expect, options) {
     'expected sha256 of the stock bundle is required');
   const stock = fs.readFileSync(stockFile);
   assert.equal(hash(stock), expect, 'stock bundle does not match the pinned revision');
-  // The wallpaper is generated here and inlined, so the candidate stays one
-  // self-contained file and the repo carries no image asset.
-  let art = 'self.AlvidaaNativeWallpaper="data:image/png;base64,' +
-    wallpaper.render().toString('base64') + '";';
+  // The curated 1920x1080 wallpapers are inlined as baseline JPEG data URIs
+  // (falling back to the procedural PNG if absent) so the candidate stays one
+  // self-contained offline file with live Backdrop switching in Home Settings.
+  const wallBundle = wallpaper.bundle();
+  let art = 'self.AlvidaaNativeWallpaper=' + JSON.stringify(wallpaper.dataUri()) + ';' +
+    '\nself.AlvidaaNativeWallpapers=' + JSON.stringify(wallBundle) + ';';
   const inputArt = options && options.inputArt;
   if (inputArt && typeof inputArt === 'object' && Object.keys(inputArt).length > 0) {
     art += '\nself.AlvidaaNativeInputArt=' + JSON.stringify(inputArt) + ';';

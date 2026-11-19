@@ -39,10 +39,14 @@ itself layers settings over a still-open overlay; the preview does not):
 
 | View | What it shows | How to reach it |
 | --- | --- | --- |
-| `dock` (default) | clock, inputs dock, apps row | nothing — it is the opening state |
-| `overlay` | the grouped apps overlay | `?view=overlay`, the **Apps overlay** button, `--view overlay` |
-| `settings` | the settings root with real row values | `?view=settings`, the **Settings** button, `--view settings` |
-| `settings-apps` | the settings apps page (`shown`/`hidden`, ★ pins) | `?view=settings-apps`, the **Settings · Apps** button |
+| `dock` (default) | quiet top-right clock, hero device title + `[OK]` cue, 5-card sculptural inputs dock with hardware PNGs | nothing — it is the opening state |
+| `apps-row` | View 2: pinned favorites + studio-icon Apps, TV Settings & Home Settings doors | `?view=apps-row`, the **Apps row** button, `--view apps-row` |
+| `overlay` | the grouped 7-column apps overlay with scrollbar | `?view=overlay`, the **Apps overlay** button, `--view overlay` |
+| `settings` | the dark-glass settings root with real row values | `?view=settings`, the **Settings** button, `--view settings` |
+| `settings-apps` | the settings apps page (`shown`/`hidden` pills, ★ pins, scrollbar) | `?view=settings-apps`, the **Settings · Apps** button |
+| `settings-inputs` | the settings input-names page | `?view=settings-inputs`, the **Settings · Inputs** button |
+| `settings-name` | the dark-glass rename input keyboard | `?view=settings-name`, the **Rename** button |
+| `idle` | the burn-in-safe drifting idle clock screen | `?view=idle`, the **Idle** button |
 
 Deep links are URL queries (`http://localhost:8080/?view=overlay`) so a
 screenshot can be taken of a specific layer without clicking; `--view` bakes
