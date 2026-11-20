@@ -10,6 +10,26 @@ without a device observation stays labelled as a claim.
 
 ## Now — correctness
 
+- [ ] **Bug: native Home misses live input signal and custom/CEC labels on 50A51HUV**
+      (logged 2026-11-20 while WiFi is down; see
+      [findings 13 §10](docs/models/50A51HUV/09.01O.P0813/findings/13-native-home.md#10-input-signal--custom-label-detection-bug-2026-11-20)).
+      Pre-existing in `native-alvidaa.js` (present in both the Nov 9 `after-alvidaa-v3.png`
+      and Nov 19 captures — not introduced by the `a937790` UI redesign):
+      1. **Confirmed root cause (signal detection):** stock `operation-ui` `app.js`
+         reads camelCase `hasSignal` from `all-inputs.getAllInputsData()`, whereas
+         `native-alvidaa.js` (`signalOf()`) only checks MQTT snake_case
+         `is_signal` / `has_signal` (and uses a ternary instead of ORing them,
+         violating `findings/01-mqtt-bridge.md`). Result: PlayStation / Fire TV /
+         HDMI2 always render as `no signal` / standby on the native Home even when
+         MQTT `/api/sources` reports `signal: true`, breaking `LIVE` badges,
+         `smartIndex()`, and auto-switch on boot.
+      2. **Needs live dump once WiFi is back (custom labels / CEC names):** inspect
+         the raw `all-inputs.getAllInputsData()` object shape on 50A51HUV while
+         PlayStation and Fire TV are connected (`rename`, `deviceName`,
+         `displayname`, `displayname2`, `hasSignal`), inspect `alvidaa_custom_names`
+         in `.starboard.*.storage`, and check whether `o2n://launcher/show` and
+         `all-inputs.invoke("refreshInputsDataByOtherModules")` (both used by stock
+         `app.js`) are needed in `native-platform.js`.
 - [x] **`scripts/report.py`** — a scaffolder for the report flow: prompt for
       model / firmware / SoC / region, validate the firmware string, append to
       `inventory.json`, run both generators, run `check.sh`. Turns a 40-minute

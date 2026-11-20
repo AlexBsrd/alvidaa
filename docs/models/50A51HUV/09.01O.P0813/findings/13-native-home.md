@@ -263,3 +263,55 @@ or the owner had. The lesson is the same one the preview harness taught: a test
 that exercises the command builder is not a test that the command works. A
 hardware-gated check, or an honest "unverified on hardware" marker, would have
 prevented the claim.
+
+## 10. Input signal & custom-label detection bug (2026-11-20)
+
+Owner report from the reference `50A51HUV`: custom input labels are missing, and
+the native Home does not detect when PlayStation or Fire TV is connected (leaving
+ports labelled `HDMI1`–`HDMI3` with `no signal` and generic HDMI icons). Logged
+offline while LAN WiFi is down; checked statically against the pinned stock
+`operation-ui` bundle (`firmware/50a51huv/operationui/apps/launcher/js/app.js`)
+and prior hardware screenshots.
+
+**Pre-existing, not a UI-redesign regression:** the Nov 9 capture
+(`firmware/50a51huv/screenshots/after-alvidaa-v3.png`) and the Nov 19 before/after
+captures all show every port as `STANDBY` / `no signal` and `HDMI1`–`HDMI3`, even
+while the bridge's MQTT `/api/sources` simultaneously reported `TV`, `HDMI2`, and
+`MusicSharing` as `signal: true`.
+
+**Confirmed root cause #1 — `signalOf()` reads MQTT field names, not the JS SDK's:**
+
+- Stock `app.js` reads **`hasSignal`** (camelCase boolean: `e.isSelected && e.hasSignal`)
+  from `all-inputs.getAllInputsData()`.
+- `tools/launcher-host/native-alvidaa.js` (`signalOf()`) only checks snake_case
+  `is_signal` and `has_signal` (the MQTT `sourcelist` names) — and uses a ternary
+  (`input.is_signal != null ? input.is_signal : input.has_signal`) instead of
+  ORing them (see `01-mqtt-bridge.md`: `is_signal` is `0` for non-active inputs
+  while `has_signal` holds actual presence).
+- Because both snake_case properties are `undefined` on the JS SDK payload,
+  `signalOf()` returns `false` for every input on `50A51HUV` — blinding the
+  `LIVE` dot, `N live` counter, `smartIndex()`, and auto-switch on boot.
+
+**Suspected contributors to missing custom / CEC labels (to confirm once WiFi returns):**
+
+1. **SDK vs storage field coverage:** `sourceName()` checks `alvidaa_custom_names`,
+   then `deviceName`, `displayname2`, `rename`, `name`, `sourceId`. It does not
+   check `displayname` / `displayName` (used on other VIDAA builds, e.g. `65U8HAU`
+   `MODDING.md`), and `deviceName` currently overrides `rename` even if `deviceName`
+   is a generic port string.
+2. **Missing launcher-show event & module refresh:** stock `app.js` subscribes to
+   `o2n://launcher/show` (`LAUNCHER_HOME_SHOW`) and exposes
+   `all-inputs.invoke("refreshInputsDataByOtherModules")`. `native-platform.js`
+   currently subscribes to `inputs-data-changed` / `str-resuming` / `init-finished`
+   only.
+
+**Next steps once WiFi is back:**
+
+1. Dump the raw JSON array from `sdk.me.req("all-inputs").getData("getAllInputsData").result`
+   on `50A51HUV` while PlayStation and Fire TV are plugged in and awake, plus read
+   `alvidaa_custom_names` from `.starboard.*.storage`.
+2. Patch `signalOf()` to OR `hasSignal`, `isSignal`, `signal`, `is_signal`, and
+   `has_signal`; align `sourceName()` field coverage & `rename` precedence with the
+   measured SDK payload; wire `o2n://launcher/show` in `native-platform.js`.
+3. Re-deploy via `native-install.cjs` and confirm live `LIVE` indicators, labels,
+   and matched `ps5.png` / `fire-tv.png` art via `tools/screenshot.sh`.
