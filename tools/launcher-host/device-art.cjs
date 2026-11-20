@@ -40,11 +40,11 @@ const FALLBACK = 'box';
 // streaming boxes, and non-HDMI input types (Screen Sharing, Music Sharing, AV,
 // USB/Media) match first; generic HDMI ports fall back to `hdmi`.
 const VISUAL_RULES = [
-  [/(playstation\s*5|\bps5\b|playstation|\bps4\b)/, 'ps5'],
+  [/(playstation\s*5|\bps5\b|playstation|\bps4\b|\bps3\b|sony\s*ps)/, 'ps5'],
   [/(nintendo|\bswitch\b)/, 'switch'],
   [/(xbox|gamepad|controller)/, 'xbox'],
   [/(apple\s*tv|appletv|airplay|shield)/, 'apple-tv'],
-  [/(fire\s*tv|fire\s*stick|chromecast|roku|streaming|stick|dongle)/, 'fire-tv'],
+  [/(fire\s*tv|fire\s*stick|amazon\s*fire|\baft[a-z0-9]{1,4}\b|chromecast|roku|streaming|stick|dongle)/, 'fire-tv'],
   [/(screen\s*shar|miracast|smart\s*view|wireless\s*display|mirror|\bcast\b)/, 'screen-share'],
   [/(music\s*shar|bluetooth|soundbar|speaker|audio|\bearc\b|\barc\b|optical|spdif)/, 'audio'],
   [/(steam|mini\s*pc|\bmac\b|desktop|computer|\bpc\b|laptop)/, 'pc'],

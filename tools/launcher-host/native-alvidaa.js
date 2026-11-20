@@ -96,9 +96,18 @@
       }
       return "rgba(56,189,248," + a + ")";
     }
+    function signalFlag(value) {
+      return value === 1 || value === "1" || value === true || value === "true";
+    }
     function signalOf(input) {
-      var value = input.is_signal != null ? input.is_signal : input.has_signal;
-      return value === 1 || value === "1" || value === true;
+      if (!input || typeof input !== "object") return false;
+      // OR across JS SDK camelCase (hasSignal/isSignal) and MQTT snake_case
+      // (has_signal/is_signal) plus bridge `signal`. On VIDAA, `is_signal` is 0
+      // for non-active inputs while `has_signal`/`hasSignal` reflects presence
+      // (findings 01 + 13 section 10).
+      return signalFlag(input.hasSignal) || signalFlag(input.isSignal) ||
+        signalFlag(input.has_signal) || signalFlag(input.is_signal) ||
+        signalFlag(input.signal);
     }
     function text(value) { return typeof value === "string" ? value.trim() : ""; }
     // Some builds wrap the icon URL in a data:image trampoline.
@@ -497,7 +506,9 @@
           if (custom && typeof custom === "object") {
             var sid = input.sourceId != null ? String(input.sourceId) : "";
             if (sid && text(custom[sid])) return text(custom[sid]);
-            var lookupKeys = [input.name, input.deviceName, input.displayname2, input.rename];
+            if (sid && text(custom[sid.toLowerCase()])) return text(custom[sid.toLowerCase()]);
+            var lookupKeys = [input.name, input.deviceName, input.displayname2,
+              input.displayname, input.displayName, input.rename];
             for (var k = 0; k < lookupKeys.length; k++) {
               var val = text(lookupKeys[k]);
               if (!val) continue;
@@ -505,8 +516,30 @@
               if (text(custom[val])) return text(custom[val]);
             }
           }
-          var resolved = text(input.deviceName) || text(input.displayname2) ||
-            text(input.rename) || text(input.name) || String(input.sourceId);
+          function normPort(s) { return String(s || "").toLowerCase().replace(/[\s_-]+/g, ""); }
+          var portNameNorm = normPort(input.name);
+          var portIdNorm = normPort(input.sourceId);
+          function isMeaningful(val) {
+            var v = text(val);
+            if (!v || /^[A-Z]{2,4}[0-9]{4,}$/.test(v)) return false;
+            var vn = normPort(v);
+            if (portNameNorm && vn === portNameNorm) return false;
+            if (portIdNorm && vn === portIdNorm) return false;
+            return true;
+          }
+          // Explicit TV custom rename beats generic port echoes; otherwise prefer
+          // CEC deviceName, MQTT displayname2, or displayname/displayName.
+          var ordered = [input.rename, input.deviceName, input.displayname2,
+            input.displayname, input.displayName];
+          var resolved = "";
+          for (var c = 0; c < ordered.length; c++) {
+            if (isMeaningful(ordered[c])) { resolved = text(ordered[c]); break; }
+          }
+          if (!resolved) {
+            resolved = text(input.deviceName) || text(input.displayname2) ||
+              text(input.displayname) || text(input.displayName) ||
+              text(input.rename) || text(input.name) || String(input.sourceId);
+          }
           if (/^[A-Z]{2,4}[0-9]{4,}$/.test(resolved) && sdk.i18n && sdk.i18n.t) {
             try {
               var translated = sdk.i18n.t(resolved);
@@ -727,18 +760,38 @@
           return (table && table.fallback) || "";
         },
         // Cobalt-safe raster PNG hardware render lookup (never SVG — findings 13 §8).
-        deviceArtPng: function (name) {
+        deviceArtPngMatch: function (name) {
           var table = root.AlvidaaNativeDeviceArt;
           if (!table || !table.pngs || typeof table.pngs !== "object") return "";
           var label = text(name).toLowerCase();
+          if (!label) return "";
+          var rules = table.pngRules || [];
+          for (var i = 0; i < rules.length; i++) {
+            var pattern = null;
+            try { pattern = new RegExp(rules[i][0], "i"); } catch (_) { pattern = null; }
+            if (pattern && pattern.test(label)) return rules[i][1];
+          }
+          return "";
+        },
+        deviceArtPng: function (name) {
+          var table = root.AlvidaaNativeDeviceArt;
+          if (!table || !table.pngs || typeof table.pngs !== "object") return "";
+          var asset = this.deviceArtPngMatch(name) || table.pngFallback || "";
+          return asset ? allowedRaster(table.pngs[asset]) : "";
+        },
+        // Match the owner's display label first, then fall back to raw CEC / TV
+        // fields so a custom port label like "Living Room" still gets PS5/Fire TV art.
+        deviceArtPngForInput: function (input, displayLabel) {
+          var table = root.AlvidaaNativeDeviceArt;
+          if (!table || !table.pngs || typeof table.pngs !== "object") return "";
+          var candidates = [displayLabel || this.sourceName(input)];
+          if (input && typeof input === "object") {
+            candidates.push(input.deviceName, input.displayname2,
+              input.displayname, input.displayName, input.rename, input.name);
+          }
           var asset = "";
-          if (label) {
-            var rules = table.pngRules || [];
-            for (var i = 0; i < rules.length; i++) {
-              var pattern = null;
-              try { pattern = new RegExp(rules[i][0], "i"); } catch (_) { pattern = null; }
-              if (pattern && pattern.test(label)) { asset = rules[i][1]; break; }
-            }
+          for (var i = 0; i < candidates.length && !asset; i++) {
+            asset = this.deviceArtPngMatch(candidates[i]);
           }
           if (!asset) asset = table.pngFallback || "";
           return asset ? allowedRaster(table.pngs[asset]) : "";
@@ -2032,7 +2085,7 @@
           }
           // Hardware asset: Cobalt-safe PNG data URI via background-image first,
           // falling back cleanly to scaled div shapes when no PNGs are baked.
-          var pngUri = this.deviceArtPng(fullName);
+          var pngUri = this.deviceArtPngForInput(input, fullName);
           var shapeName = pngUri ? "" : this.deviceArtName(fullName);
           if (pngUri) {
             tile.push(h("div", {

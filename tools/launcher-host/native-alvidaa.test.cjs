@@ -2434,3 +2434,58 @@ test('settings: Inputs toggles show/hide with Left/Right, refuses hiding last in
   assert.equal(updatedRoot.sub, '2 shown, 1 hidden');
   v.stop();
 });
+
+test('signal detection: supports SDK camelCase hasSignal/isSignal and ORs snake_case is_signal/has_signal', () => {
+  const f = setup(), v = f.instance;
+  v.start();
+  // 50A51HUV SDK uses camelCase `hasSignal` boolean; no snake_case fields exist.
+  v.sources = [
+    { sourceId: 'TV', name: 'TV', hasSignal: false },
+    { sourceId: 'HDMI1', name: 'HDMI1', deviceName: 'PlayStation 5', hasSignal: true },
+    { sourceId: 'HDMI2', name: 'HDMI2', rename: 'Fire TV', is_signal: 0, has_signal: '1' },
+    { sourceId: 'HDMI3', name: 'HDMI3', isSignal: 1 },
+    { sourceId: 'AVS', name: 'AV', signal: true }
+  ];
+  assert.equal(v.smartIndex(), 1, 'smartIndex finds the first camelCase hasSignal:true input');
+  v.dock = 1;
+  const flat = flatten(f.component.render.call(v, (tag, data, children) => ({ tag, data, children })));
+  const texts = flat.flatMap(n => n.children || []).filter(c => typeof c === 'string');
+  assert.ok(texts.includes('4 live'), 'all 4 signal conventions count toward live inputs');
+  assert.ok(texts.includes('connected'), 'focused PlayStation 5 renders as connected');
+  assert.equal(texts.filter(t => t === 'LIVE').length, 4, 'all 4 live inputs render LIVE dots');
+  v.stop();
+});
+
+test('custom labels & CEC fallback: resolves displayname, TV rename over generic port echo, and raw CEC hardware art', () => {
+  const f = setup(), v = f.instance;
+  f.root.AlvidaaNativeDeviceArt = {
+    rules: [], icons: {}, fallback: 'box',
+    pngRules: [['(playstation|\\bps5\\b)', 'ps5'], ['(fire\\s*tv|\\baft[a-z0-9]{1,4}\\b)', 'fire-tv']],
+    pngs: {
+      ps5: 'data:image/png;base64,PS5PNG',
+      'fire-tv': 'data:image/png;base64,FIREPNG',
+      hdmi: 'data:image/png;base64,HDMIPNG'
+    },
+    pngFallback: 'hdmi',
+    doors: {}
+  };
+  v.start();
+  // Explicit TV rename beats a generic port-echo deviceName ("HDMI2").
+  assert.equal(v.sourceName({ sourceId: 'HDMI2', name: 'HDMI2', deviceName: 'HDMI2', rename: 'PS5' }), 'PS5');
+  // Generic/empty/i18n rename yields to real CEC deviceName.
+  assert.equal(v.sourceName({ sourceId: 'HDMI2', name: 'HDMI2', rename: 'HDMI2', deviceName: 'PlayStation 5' }), 'PlayStation 5');
+  assert.equal(v.sourceName({ sourceId: 'HDMI3', name: 'HDMI3', rename: 'LA0159', deviceName: 'Fire TV Stick' }), 'Fire TV Stick');
+  // Builds using `displayname` / `displayName` resolve cleanly.
+  assert.equal(v.sourceName({ sourceId: 'HDMI1', name: 'HDMI1', displayname: 'PS5' }), 'PS5');
+  assert.equal(v.sourceName({ sourceId: 'HDMI3', name: 'HDMI3', displayName: 'Fire TV' }), 'Fire TV');
+  // Case-insensitive sourceId lookup in alvidaa_custom_names even when input.name differs.
+  v.prefs.customNames = { hdmi2: 'Game Room' };
+  const ps5Input = { sourceId: 'HDMI2', name: 'HDMI 2', deviceName: 'PlayStation 5', hasSignal: true };
+  assert.equal(v.sourceName(ps5Input), 'Game Room');
+  // Even with a non-hardware custom label ("Game Room"), hardware art still detects PS5 via CEC deviceName!
+  assert.equal(v.deviceArtPngForInput(ps5Input), 'data:image/png;base64,PS5PNG');
+  // Raw Amazon Fire TV model CEC string ("AFTMM") still resolves Fire TV art.
+  const fireInput = { sourceId: 'HDMI3', name: 'HDMI3', deviceName: 'AFTMM', hasSignal: true };
+  assert.equal(v.deviceArtPngForInput(fireInput), 'data:image/png;base64,FIREPNG');
+  v.stop();
+});

@@ -94,11 +94,11 @@ test('raster hardware & door PNG assets exist, are valid PNGs, and map living-ro
       file + ': valid PNG signature');
   }
   const cases = [
-    ['PlayStation 5', 'ps5'], ['PS5', 'ps5'],
+    ['PlayStation 5', 'ps5'], ['PS5', 'ps5'], ['PlayStation 4', 'ps5'], ['PS3', 'ps5'],
     ['Nintendo Switch', 'switch'],
     ['Xbox Series X', 'xbox'],
     ['Apple TV', 'apple-tv'], ['AirPlay', 'apple-tv'],
-    ['Fire TV Stick', 'fire-tv'], ['Chromecast', 'fire-tv'],
+    ['Fire TV Stick', 'fire-tv'], ['FireTV', 'fire-tv'], ['Amazon Fire', 'fire-tv'], ['AFTMM', 'fire-tv'], ['Chromecast', 'fire-tv'],
     ['Screen Sharing', 'screen-share'], ['Miracast', 'screen-share'],
     ['Music Sharing', 'audio'], ['Bluetooth Speaker', 'audio'], ['eARC Soundbar', 'audio'],
     ['Steam Machine', 'pc'], ['Mini PC', 'pc'],

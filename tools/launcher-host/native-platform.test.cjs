@@ -121,7 +121,7 @@ test('malformed results are errors; successful empty lists replace old data', ()
 test('stop cleans listeners/timers; reactivation reads again without duplicates', () => {
   const f = fixture(); f.state.apps = []; f.adapter.start(); f.adapter.start();
   assert.equal(f.updates.length, 1);
-  assert.equal([...f.listeners.values()].reduce((n, s) => n + s.size, 0), 4);
+  assert.equal([...f.listeners.values()].reduce((n, s) => n + s.size, 0), 5);
   const queued = f.timers.values().next().value.fn;
   f.adapter.stop(); f.adapter.stop(); queued(); f.emit(APP_CHANGE);
   assert.equal(f.timers.size, 0);
@@ -129,15 +129,21 @@ test('stop cleans listeners/timers; reactivation reads again without duplicates'
   assert.equal([...f.listeners.values()].reduce((n, s) => n + s.size, 0), 0);
   f.state.apps = [{ appId: '2', appName: 'New app' }]; f.adapter.start();
   assert.equal(f.latest().apps[0].appName, 'New app');
-  assert.equal([...f.listeners.values()].reduce((n, s) => n + s.size, 0), 4);
+  assert.equal([...f.listeners.values()].reduce((n, s) => n + s.size, 0), 5);
 });
 
-test('change and resume notifications coalesce', () => {
+test('change, resume, and launcher/show notifications coalesce', () => {
   const f = fixture(); f.adapter.start();
   f.emit(APP_CHANGE); f.emit(INPUT_CHANGE); f.emit('o2n://sdk/str-resuming');
+  f.emit('o2n://launcher/show');
   assert.equal(f.timers.size, 1); f.next();
   assert.equal(f.updates.length, 2);
   assert.equal(f.timers.size, 0);
+  // Returning to Home via o2n://launcher/show alone refreshes input names/signals.
+  f.state.sources = [{ sourceId: 'HDMI1', name: 'HDMI1', deviceName: 'PlayStation 5', hasSignal: true }];
+  f.emit('o2n://launcher/show'); f.next();
+  assert.equal(f.latest().sources[0].deviceName, 'PlayStation 5');
+  assert.equal(f.latest().sources[0].hasSignal, true);
 });
 
 test('lazy-service notifications during reads cannot create an infinite retry loop', () => {

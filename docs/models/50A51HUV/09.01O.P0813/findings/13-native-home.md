@@ -305,13 +305,24 @@ while the bridge's MQTT `/api/sources` simultaneously reported `TV`, `HDMI2`, an
    currently subscribes to `inputs-data-changed` / `str-resuming` / `init-finished`
    only.
 
+**Offline patch status (2026-11-20 — unit-tested, pending hardware verification):**
+
+- `native-alvidaa.js`: `signalOf()` now ORs `hasSignal`, `isSignal`, `has_signal`,
+  `is_signal`, and `signal`; `sourceName()` adds `displayname`/`displayName`,
+  case-insensitive `sourceId` lookup in `alvidaa_custom_names`, and prefers
+  meaningful TV `rename` / CEC labels over generic port echoes (`"HDMI2"`,
+  `"LA####"`); `deviceArtPngForInput()` falls back to raw CEC fields when a
+  custom label does not match a hardware class.
+- `device-art.cjs`: broadened PlayStation (`PS3`–`PS5`) and Fire TV (`Amazon Fire`,
+  `AFT*` CEC OSD IDs) matchers.
+- `native-platform.js`: subscribed to `o2n://launcher/show` (`LAUNCHER_HOME_SHOW`
+  from stock `app.js`).
+
 **Next steps once WiFi is back:**
 
 1. Dump the raw JSON array from `sdk.me.req("all-inputs").getData("getAllInputsData").result`
    on `50A51HUV` while PlayStation and Fire TV are plugged in and awake, plus read
-   `alvidaa_custom_names` from `.starboard.*.storage`.
-2. Patch `signalOf()` to OR `hasSignal`, `isSignal`, `signal`, `is_signal`, and
-   `has_signal`; align `sourceName()` field coverage & `rename` precedence with the
-   measured SDK payload; wire `o2n://launcher/show` in `native-platform.js`.
-3. Re-deploy via `native-install.cjs` and confirm live `LIVE` indicators, labels,
-   and matched `ps5.png` / `fire-tv.png` art via `tools/screenshot.sh`.
+   `alvidaa_custom_names` from `.starboard.*.storage` (verify whether
+   `refreshInputsDataByOtherModules` or any extra field is still needed).
+2. Re-deploy via `native-install.cjs` and confirm live `LIVE` indicators, custom
+   labels, and matched `ps5.png` / `fire-tv.png` art via `tools/screenshot.sh`.

@@ -9,7 +9,8 @@
       "o2n://sdk/init-finished",
       "o2n://app-service/all-apps-changed",
       "o2n://all-inputs/inputs-data-changed",
-      "o2n://sdk/str-resuming"
+      "o2n://sdk/str-resuming",
+      "o2n://launcher/show"
     ];
     var delays = [250, 500, 1000, 2000, 4000, 8000];
     var apps = [], sources = [], running = false, reading = false, timer = null, attempt = 0;

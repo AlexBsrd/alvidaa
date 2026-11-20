@@ -23,13 +23,17 @@ without a device observation stays labelled as a claim.
          HDMI2 always render as `no signal` / standby on the native Home even when
          MQTT `/api/sources` reports `signal: true`, breaking `LIVE` badges,
          `smartIndex()`, and auto-switch on boot.
-      2. **Needs live dump once WiFi is back (custom labels / CEC names):** inspect
-         the raw `all-inputs.getAllInputsData()` object shape on 50A51HUV while
-         PlayStation and Fire TV are connected (`rename`, `deviceName`,
-         `displayname`, `displayname2`, `hasSignal`), inspect `alvidaa_custom_names`
-         in `.starboard.*.storage`, and check whether `o2n://launcher/show` and
-         `all-inputs.invoke("refreshInputsDataByOtherModules")` (both used by stock
-         `app.js`) are needed in `native-platform.js`.
+      2. **Offline patch landed, pending hardware check once WiFi returns:**
+         `signalOf()` now ORs `hasSignal`/`isSignal`/`has_signal`/`is_signal`/`signal`;
+         `sourceName()` resolves `displayname`/`displayName`, case-insensitive
+         `sourceId` in `alvidaa_custom_names`, and explicit TV `rename` over
+         generic port echoes; `deviceArtPngForInput()` falls back to raw CEC
+         fields (`deviceName`, `displayname2`, etc.) plus Amazon `AFT*` / `PS3`–`PS5`
+         patterns; `native-platform.js` subscribes to `o2n://launcher/show`.
+         Once WiFi is back: dump raw `all-inputs.getAllInputsData()` +
+         `alvidaa_custom_names` from `.starboard.*.storage` on 50A51HUV while
+         PlayStation and Fire TV are connected, deploy via `native-install.cjs`,
+         and confirm live `LIVE` badges + labels via `tools/screenshot.sh`.
 - [x] **`scripts/report.py`** — a scaffolder for the report flow: prompt for
       model / firmware / SoC / region, validate the firmware string, append to
       `inventory.json`, run both generators, run `check.sh`. Turns a 40-minute
