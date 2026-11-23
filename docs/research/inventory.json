@@ -844,6 +844,35 @@
         "identity_gate": "fileWrite -> 503 'client request permission check error, please check appconfig'; same gate as 43A5LE/55U67LEVS. Cross-confirmed on a second unit (85U8Q, V0000.09.60F.Q0528).",
         "root": "uid 0 via the rc.local otaTest.sh hook; boot-persistent. Dropbear 2024.86 on :8008, key-only."
       }
+    },
+    {
+      "id": "V0000.09.60L.Q0623",
+      "model": "55A6NV (platform model 55A60QUV)",
+      "region": "BRA (Hisense_GetRegion AM; SSDP region ?)",
+      "soc": "MTK9603",
+      "vidaa_os": "U09.60",
+      "transport_protocol": "?",
+      "browser": "Chromium 111.5563.5.1 \"Odin\" (armv7l)",
+      "build_date": "?",
+      "tested_by": [
+        "gh:TioLen"
+      ],
+      "capabilities": {
+        "pairing": "working",
+        "launcher": "working",
+        "native_home": "untested",
+        "file_bridge_traversal": "untested",
+        "file_bridge_write": "untested",
+        "identity_gate": "untested",
+        "euladpp_untar": "untested",
+        "devtools_forge": "untested",
+        "root": "untested",
+        "notes": "Owner-reported label: 55A6NV. Read-only browser calls returned Hisense_GetModelName=55A60QUV, Hisense_GetFirmWareVersion=V0000.09.60L.Q0623, Hisense_GetChipSetName=MTK9603, Hisense_GetOSVersion=U09.60, Hisense_GetCountryCode=BRA, and Hisense_GetRegion=AM; see docs/models/55A60QUV/V0000.09.60L.Q0623/findings/01-firmware-fingerprint.md. TV About software field reported V0000.09.60L.10623; the API result agrees with the UA and minor version."
+      },
+      "capability_detail": {
+        "pairing": "RemoteNow pairing and control for the external Python server are owner-confirmed on this TV; see the project progress note.",
+        "launcher": "External-server Home, WebSocket connection, and return via the Home watcher are owner-confirmed; native Home is not verified."
+      }
     }
   ]
 }

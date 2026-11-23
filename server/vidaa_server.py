@@ -26,6 +26,7 @@ import ssl
 import struct
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import urllib.parse
@@ -41,6 +42,8 @@ TOKENS_FILE = os.path.join(KEYS, "tokens.json")
 LAUNCHER_FILE = os.path.join(KEYS, "launcher.json")
 CONFIG_FILE = os.path.join(HERE, "config.json")
 RECON_FILE = os.path.join(HERE, "recon-report.json")
+CONFIG_WRITE_LOCK = threading.Lock()
+WATCHER_DELAY_MAX = 60
 HOST = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("HISENSE_HOST", "")
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8765
 MQTT_PORT = 36669
@@ -122,8 +125,10 @@ def save_tokens(t):
 
 def load_config():
     cfg = {"hidden": [], "rename": {}, "inputs": {}, "only": [], "shortcuts": [],
+           "serverUrl": "",
            "autoSwitch": False, "installed": False, "launcherUrl": "",
-           "watcher": {"enabled": True, "app": "Home", "interval": 3, "cooldown": 6}}
+           "watcher": {"enabled": True, "app": "Home", "interval": 3,
+                       "cooldown": 6, "homeDelay": 0, "paused": False}}
     try:
         with open(CONFIG_FILE) as f:
             user = json.load(f)
@@ -137,6 +142,8 @@ def load_config():
             cfg["watcher"].update(user["watcher"])
         if isinstance(user.get("shortcuts"), list):
             cfg["shortcuts"] = user["shortcuts"]
+        if isinstance(user.get("serverUrl"), str):
+            cfg["serverUrl"] = user["serverUrl"]
         if isinstance(user.get("only"), list):
             cfg["only"] = user["only"]
         if "autoSwitch" in user:
@@ -158,6 +165,86 @@ def load_config():
     except (OSError, ValueError):
         pass
     return cfg
+
+def watcher_settings():
+    with open(CONFIG_FILE, encoding="utf-8") as f:
+        config = json.load(f)
+    if not isinstance(config, dict):
+        raise ValueError("server/config.json must contain a JSON object")
+    watcher = config.get("watcher", {})
+    if not isinstance(watcher, dict):
+        raise ValueError("watcher must be a JSON object")
+    delay = watcher.get("homeDelay", 0)
+    paused = watcher.get("paused", False)
+    if type(delay) is not int or not 0 <= delay <= WATCHER_DELAY_MAX:
+        raise ValueError(f"watcher.homeDelay must be an integer from 0 to {WATCHER_DELAY_MAX}")
+    if type(paused) is not bool:
+        raise ValueError("watcher.paused must be a boolean")
+    return {"delay": delay, "paused": paused}
+
+def update_watcher_settings(action, delay=None):
+    with CONFIG_WRITE_LOCK:
+        with open(CONFIG_FILE, encoding="utf-8") as f:
+            config = json.load(f)
+        if not isinstance(config, dict):
+            raise ValueError("server/config.json must contain a JSON object")
+        watcher = config.get("watcher", {})
+        if not isinstance(watcher, dict):
+            raise ValueError("watcher must be a JSON object")
+
+        if action == "set_delay":
+            if type(delay) is not int or not 0 <= delay <= WATCHER_DELAY_MAX:
+                raise ValueError(f"delay must be an integer from 0 to {WATCHER_DELAY_MAX}")
+            if watcher.get("homeDelay", 0) == delay:
+                return watcher_settings()
+            watcher["homeDelay"] = delay
+        elif action == "pause":
+            if watcher.get("paused", False) is True:
+                return watcher_settings()
+            watcher["paused"] = True
+        elif action == "resume":
+            if watcher.get("paused", False) is False:
+                return watcher_settings()
+            watcher["paused"] = False
+        else:
+            raise ValueError("unsupported watcher action")
+
+        config["watcher"] = watcher
+        temp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                    mode="w", encoding="utf-8", dir=os.path.dirname(CONFIG_FILE),
+                    prefix=".config-", suffix=".tmp", delete=False) as f:
+                temp_path = f.name
+                json.dump(config, f, indent=2)
+                f.write("\n")
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(temp_path, CONFIG_FILE)
+        except OSError:
+            if temp_path and os.path.exists(temp_path):
+                os.unlink(temp_path)
+            raise
+        return watcher_settings()
+
+def configured_server_urls():
+    """Return the configured server origin, Home URL, and report endpoint."""
+    value = load_config().get("serverUrl", "").strip()
+    parsed = urllib.parse.urlsplit(value)
+    if (parsed.scheme not in ("http", "https") or not parsed.hostname
+            or parsed.username is not None or parsed.password is not None
+            or parsed.path not in ("", "/") or parsed.query or parsed.fragment):
+        raise ValueError("server/config.json must set serverUrl to an HTTP(S) origin")
+    try:
+        port = parsed.port
+    except ValueError as e:
+        raise ValueError("server/config.json serverUrl has an invalid port") from e
+    hostname = parsed.hostname
+    host = f"[{hostname}]" if ":" in hostname else hostname
+    netloc = f"{host}:{port}" if port is not None else host
+    origin = urllib.parse.urlunsplit((parsed.scheme, netloc, "", "", ""))
+    report_origin = urllib.parse.urlunsplit((parsed.scheme, f"{host}:8766", "", "", ""))
+    return origin, origin + "/", report_origin + "/report"
 
 def tls_context():
     cert, key = cert_paths()
@@ -299,6 +386,7 @@ class TVBridge:
         self.c.on_connect = self._on_connect
         self.c.on_message = self._on_message
         self.last_launch = 0.0
+        self.bounce_lock = threading.Lock()
         self.apps_at = 0.0
         self._recovering = False
 
@@ -521,15 +609,37 @@ class TVBridge:
         return {"t": "installed", "ok": True, "url": url}
 
     def _maybe_bounce_home(self):
-        cfg = load_config()
-        w = cfg.get("watcher", {})
-        st = (self.state or {}).get("statetype")
-        if w.get("enabled", True) and st == "remote_launcher" \
-                and time.time() - self.last_launch > w.get("cooldown", 6):
+        if not self.bounce_lock.acquire(blocking=False):
+            return
+        try:
+            cfg = load_config()
+            w = cfg.get("watcher", {})
+            if not w.get("enabled", True) or w.get("paused", False) \
+                    or (self.state or {}).get("statetype") != "remote_launcher":
+                return
+
+            delay = w.get("homeDelay", 0)
+            if type(delay) is not int or not 0 <= delay <= WATCHER_DELAY_MAX:
+                print("watcher: invalid homeDelay; expected integer from 0 to "
+                      f"{WATCHER_DELAY_MAX}", flush=True)
+                return
+            if delay:
+                time.sleep(delay)
+
+            cfg = load_config()
+            w = cfg.get("watcher", {})
+            if not w.get("enabled", True) or w.get("paused", False) \
+                    or (self.state or {}).get("statetype") != "remote_launcher":
+                return
+            if time.time() - self.last_launch <= w.get("cooldown", 6):
+                return
+
             self.last_launch = time.time()
             threading.Thread(target=doom_stop, daemon=True).start()
             r = self.launch_home(w.get("app", "Home"))
             print(f"watcher: VIDAA home detected -> {r}", flush=True)
+        finally:
+            self.bounce_lock.release()
 
     def launch_home(self, name="Home"):
         """Launch our launcher entry — match by content, not name-first:
@@ -567,10 +677,10 @@ class TVBridge:
                 cfg = load_config()
                 w = cfg.get("watcher", {})
                 if self.connected.is_set():
-                    if w.get("enabled", True):
+                    if w.get("enabled", True) and not w.get("paused", False):
                         # poll gettvstate as fallback; _on_message handles instant bounce on reply/push
                         self.call("ui_service", "gettvstate")
-                        self._maybe_bounce_home()
+                        threading.Thread(target=self._maybe_bounce_home, daemon=True).start()
                     # live source signal refresh every ~9s
                     if cycle % 3 == 0:
                         try:
@@ -666,13 +776,22 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         super().end_headers()
 
-    def _json(self, obj):
+    def _json(self, obj, status=200):
         body = json.dumps(obj).encode()
-        self.send_response(200)
+        self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _same_origin(self):
+        origin = self.headers.get("Origin")
+        if not origin:
+            return True
+        parsed = urllib.parse.urlsplit(origin)
+        host = self.headers.get("Host", "")
+        return parsed.scheme in ("http", "https") and bool(host) \
+            and parsed.netloc.lower() == host.lower()
 
     def do_OPTIONS(self):
         # CORS preflight — Cobalt sends it for cross-origin POSTs from file://
@@ -686,6 +805,35 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
         q = {k: v[0] for k, v in urllib.parse.parse_qs(u.query).items()}
+
+        if u.path == "/api/watcher":
+            try:
+                return self._json({"ok": True, **watcher_settings()})
+            except (OSError, ValueError) as e:
+                return self._json({"ok": False, "error": str(e)}, 500)
+
+        if u.path == "/api/server-config.js":
+            try:
+                server_url, home_url, report_url = configured_server_urls()
+            except ValueError as e:
+                self.send_error(500, str(e))
+                return
+            body = ("window.AlvidaaConfig=Object.freeze(" +
+                    json.dumps({"serverUrl": server_url, "homeUrl": home_url,
+                                "reportBaseUrl": report_url.rsplit("/", 1)[0],
+                                "reportUrl": report_url}) + ");\n").encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        # The compact two-row launcher is staged at /next/app.html. Serve it
+        # at the stable Home URL so the installed TV tile needs no layout URL.
+        if u.path in ("/", "/index.html"):
+            self.path = "/next/app.html" + (("?" + u.query) if u.query else "")
+            return super().do_GET()
 
         if u.path == "/ws":
             key = self.headers.get("Sec-WebSocket-Key")
@@ -808,6 +956,36 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
+        if u.path == "/api/watcher":
+            if not self._same_origin():
+                return self._json({"ok": False, "error": "same-origin request required"}, 403)
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                return self._json({"ok": False, "error": "invalid Content-Length"}, 400)
+            if n <= 0 or n > 4096:
+                return self._json({"ok": False, "error": "request body must be 1-4096 bytes"}, 400)
+            try:
+                data = json.loads(self.rfile.read(n).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                return self._json({"ok": False, "error": "invalid JSON body"}, 400)
+            if not isinstance(data, dict):
+                return self._json({"ok": False, "error": "JSON body must be an object"}, 400)
+
+            action = data.get("action")
+            if action not in ("set_delay", "pause", "resume"):
+                return self._json({"ok": False, "error": "unsupported watcher action"}, 400)
+            delay = data.get("delay")
+            if action == "set_delay" and (
+                    type(delay) is not int or not 0 <= delay <= WATCHER_DELAY_MAX):
+                return self._json({"ok": False, "error":
+                                   f"delay must be an integer from 0 to {WATCHER_DELAY_MAX}"}, 400)
+            try:
+                settings = update_watcher_settings(action, delay)
+            except (OSError, ValueError) as e:
+                return self._json({"ok": False, "error": str(e)}, 500)
+            return self._json({"ok": True, **settings})
+
         if u.path == "/api/probe":
             n = int(self.headers.get("Content-Length") or 0)
             raw = self.rfile.read(n) if n else b"{}"

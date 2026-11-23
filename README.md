@@ -106,6 +106,13 @@ TV_MAC=<tv-wifi-mac> ./venv/bin/python pair.py <tv-ip>
 #    -> OK -> restart TV -> open "Home"
 ```
 
+`server/config.json` contains the server's `serverUrl`, the central origin used
+by the install/migration and diagnostic pages. If the server's LAN address
+changes, update that field and restart the server; then open
+`/migrate-alvidaa-home-url.html?migrate=confirm` on the TV to update its
+persisted Home tile URL. A DHCP reservation or stable LAN DNS name avoids
+needing to migrate the TV tile after an address change.
+
 Harden `server/config.json` (hide preset apps, rename tiles, set `"autoSwitch": true` to auto-jump to a single active HDMI input on boot, or toggle the watcher) — it is read live. The launcher renders at 1080p (`?540p` fallback), caches tiles in `localStorage` for instant cold paint, auto-focuses active HDMI signals, and binds remote keys `1`–`9` as tile hotkeys. Production deployment on an always-on box:
 
 [DEPLOY.md](docs/launcher/DEPLOY.md). Roadmap for shimming and modifying the native stock launcher (`/APPS/channelA/hisenseUI/`) directly on rooted TVs: [LAUNCHER_V2.md](docs/launcher/LAUNCHER_V2.md). One server per TV — the paired MQTT identity is exclusive.
@@ -189,6 +196,7 @@ both regenerate from `docs/research/inventory.json`.
 | 55U67LEVS | V0000.09.60A.Q0707 (55U67LEVS) | untested | achieved | [unit owner](https://github.com/carteakey/alvidaa) |
 | 65E86GEVS | V0000.09.09O.P0930 | untested | achieved | [@noctonca](https://github.com/noctonca) |
 | 65A70LAVT | V0000.09.60A.Q0707 (65A70LAVT) | untested | achieved | [u/sl3yr84](https://reddit.com/user/sl3yr84) |
+| 55A6NV | V0000.09.60L.Q0623 | working | untested | [@TioLen](https://github.com/TioLen) |
 <!-- INVENTORY:END -->
 
 **Report yours by PR, not issue** — add a firmware entry to [inventory.json](docs/research/inventory.json) (single source of truth; fields and where to find them: [TESTED-MODELS.md](docs/research/TESTED-MODELS.md)) and run `scripts/gen-inventory.py` — every table in the repo regenerates from it.

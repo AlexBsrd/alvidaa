@@ -38,6 +38,7 @@ var S = {
   apps: null, sources: null, shortcuts: [], state: null, serverInstalled: false,
   online: false, hello: false,
   row: 0, col: 0,            // focus: row 0 = inputs, row 1 = apps, row 2 = install
+  settingsFocused: false,
   toast: "", toastUntil: 0,
   busy: false,
   focusPicked: false, liveReceived: false, userInteracted: false,
@@ -620,7 +621,7 @@ function drawRow(idx, y, title) {
     return;
   }
 
-  var rowActive = (S.row === idx);
+  var rowActive = (!S.settingsFocused && S.row === idx);
   for (var i = start; i < end; i++) {
     var x = left() + (i - start) * (tileW() + gap());
     var focused = (rowActive && S.col === i);
@@ -641,7 +642,7 @@ function draw() {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
-  var key = S.row + ":" + S.col;
+  var key = S.settingsFocused ? "settings" : S.row + ":" + S.col;
   if (key !== lastFocusKey) { lastFocusKey = key; focusAnim = 0; }
 
   // Deep OLED Obsidian Base
@@ -734,6 +735,25 @@ function draw() {
   ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif";
   ctx.fillStyle = S.online ? "rgba(255, 255, 255, 0.85)" : "rgba(148, 163, 184, 0.8)";
   ctx.fillText(S.online ? "ALVIDAA · LIVE" : (S.hello ? "RECONNECTING" : "OFFLINE"), pillX + 26, pillY + pillH / 2 + 3.5);
+
+  var settingsSize = 34;
+  var settingsX = pillX - 42;
+  var settingsY = pillY - 4;
+  ctx.fillStyle = S.settingsFocused ? "rgba(56, 189, 248, 0.18)" : "rgba(255, 255, 255, 0.04)";
+  ctx.beginPath();
+  ctx.arc(settingsX + settingsSize / 2, settingsY + settingsSize / 2, settingsSize / 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = S.settingsFocused ? "rgba(56, 189, 248, 0.9)" : "rgba(255, 255, 255, 0.1)";
+  ctx.lineWidth = S.settingsFocused ? 2 : 1;
+  ctx.stroke();
+  ctx.font = "600 17px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillStyle = S.settingsFocused ? "#ffffff" : "#cbd5e1";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("\u2699", settingsX + settingsSize / 2, settingsY + settingsSize / 2);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  HIT.push({ x: settingsX, y: settingsY, w: settingsSize, h: settingsSize, action: "settings" });
 
   drawRow(0, 168, "INPUTS & SOURCES");
   drawRow(1, 298, "APPS & CHANNELS");
@@ -861,11 +881,31 @@ document.addEventListener("keydown", function (e) {
     e.preventDefault();
     return;
   }
+  if (S.settingsFocused) {
+    if (e.key === "ArrowDown" || e.key === "Home" || e.key === "0") {
+      S.settingsFocused = false;
+      S.row = 0;
+      if (e.key !== "ArrowDown") S.col = 0;
+      clampFocus();
+      bumpFocus();
+      draw();
+    } else if (e.key === "Enter") {
+      location.href = "/settings.html";
+    }
+    e.preventDefault();
+    return;
+  }
   var rows = installVisible() ? 3 : 2;
   var list = items(S.row);
   if (e.key === "ArrowRight") { S.focusPicked = true; if (S.col < list.length - 1) { S.col++; bumpFocus(); draw(); } }
   else if (e.key === "ArrowLeft") { S.focusPicked = true; if (S.col > 0) { S.col--; bumpFocus(); draw(); } }
-  else if (e.key === "ArrowUp") { S.focusPicked = true; if (S.row > 0) { S.row--; clampFocus(); bumpFocus(); draw(); } }
+  else if (e.key === "ArrowUp") {
+    S.focusPicked = true;
+    if (S.row > 0) { S.row--; clampFocus(); }
+    else { S.settingsFocused = true; }
+    bumpFocus();
+    draw();
+  }
   else if (e.key === "ArrowDown") { S.focusPicked = true; if (S.row < rows - 1) { S.row++; clampFocus(); bumpFocus(); draw(); } }
   else if (e.key === "Enter") { activate(S.row, S.col); }
   else if (e.key >= "1" && e.key <= "9") {
@@ -899,6 +939,10 @@ cv.addEventListener("click", function (e) {
   if (S.autoSwitchAt) { cancelAutoSwitch(); return; }
   var t = hitAt(e.clientX, e.clientY);
   if (!t) return;
+  if (t.action === "settings") {
+    location.href = "/settings.html";
+    return;
+  }
   S.focusPicked = true;
   S.row = t.row; S.col = t.col; draw();
   activate(t.row, t.col);
@@ -975,6 +1019,35 @@ function installAsApp() {
   draw();
 }
 
+function resumeHomeWatcher() {
+  var x = new XMLHttpRequest();
+  x.open("POST", "/api/watcher", true);
+  x.setRequestHeader("Content-Type", "application/json");
+  x.onreadystatechange = function () {
+    if (x.readyState !== 4) return;
+    if (x.status < 200 || x.status >= 300) {
+      S.toast = "watcher resume failed";
+      S.toastUntil = Date.now() + 3000;
+      draw();
+      return;
+    }
+    try {
+      var result = JSON.parse(x.responseText);
+      if (!result.ok) throw new Error(result.error || "request failed");
+    } catch (e) {
+      S.toast = "watcher resume failed";
+      S.toastUntil = Date.now() + 3000;
+      draw();
+    }
+  };
+  x.onerror = function () {
+    S.toast = "watcher resume failed";
+    S.toastUntil = Date.now() + 3000;
+    draw();
+  };
+  x.send(JSON.stringify({ action: "resume" }));
+}
+
 // ---------------------------------------------------------------- diagnostics [next r1]
 // The screen is the console: every draw is guarded, errors are painted ON the
 // canvas (odin has no console reach). Mode tag + state line are always shown.
@@ -1043,6 +1116,7 @@ window.onerror = function (msg, src, line) {
   };
 
 try { loadCache(); } catch (e) { DIAG.errors.push("loadCache: " + e.message); }
+try { resumeHomeWatcher(); } catch (e) { DIAG.errors.push("watcher resume: " + e.message); }
 try { connect(); } catch (e) { DIAG.errors.push("connect: " + e.message); }
 try { draw(); } catch (e) { paintDiag("kickoff: " + e.message); }
 </script>
