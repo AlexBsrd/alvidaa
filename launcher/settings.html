@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Configurações — Alvidaa</title>
+<title>Settings — Alvidaa</title>
 <style>
   :root { color-scheme: dark; font-family: Arial, sans-serif; background: #07080c; color: #f8fafc; }
   * { box-sizing: border-box; }
@@ -27,19 +27,19 @@
 </head>
 <body>
 <main>
-  <h1>Configurações</h1>
+  <h1>Settings</h1>
   <div class="setting">
-    <label for="home-delay">Atraso ao apertar Home</label>
+    <label for="home-delay">Home button delay</label>
     <input id="home-delay" type="number" min="0" max="60" step="1" value="0" inputmode="numeric">
   </div>
-  <p class="hint">Segundos para esperar após detectar a Home original antes de abrir o Alvidaa novamente. Use de 0 a 60.</p>
+  <p class="hint">Seconds to wait after detecting the stock Home screen before reopening Alvidaa. Enter a value from 0 to 60.</p>
   <div class="actions">
-    <button id="save" type="button">Salvar</button>
-    <button id="stop" type="button">Parar serviço</button>
-    <button id="back" type="button">Voltar</button>
+    <button id="save" type="button">Save</button>
+    <button id="stop" type="button">Stop service</button>
+    <button id="back" type="button">Back</button>
   </div>
-  <p id="status" role="status" aria-live="polite">Carregando configurações…</p>
-  <p class="hint">Parar serviço pausa apenas o retorno automático. O servidor continua ativo. Pressione Home e abra Alvidaa manualmente pela Home original para reativar o retorno automático.</p>
+  <p id="status" role="status" aria-live="polite">Loading settings…</p>
+  <p class="hint">Stop service pauses only automatic return; the server remains active. Press Home and open Alvidaa manually from the stock Home screen to resume automatic return.</p>
 </main>
 <script>
 "use strict";
@@ -65,27 +65,27 @@ function request(data, callback) {
     if (xhr.readyState !== 4) return;
     var result;
     try { result = JSON.parse(xhr.responseText); }
-    catch (e) { callback(null, "Resposta inválida do servidor."); return; }
+    catch (e) { callback(null, "Invalid response from server."); return; }
     if (xhr.status < 200 || xhr.status >= 300 || !result.ok) {
-      callback(null, result.error || "A solicitação falhou.");
+      callback(null, result.error || "The request failed.");
       return;
     }
     callback(result, null);
   };
-  xhr.onerror = function () { callback(null, "Não foi possível conectar ao servidor."); };
+  xhr.onerror = function () { callback(null, "Could not connect to the server."); };
   xhr.send(data ? JSON.stringify(data) : null);
 }
 
 request(null, function (result, error) {
   if (error) { showStatus(error, true); return; }
   delayInput.value = result.delay;
-  showStatus(result.paused ? "Retorno automático pausado." : "Retorno automático ativo.", false);
+  showStatus(result.paused ? "Automatic return is paused." : "Automatic return is active.", false);
 });
 
 saveButton.addEventListener("click", function () {
   var delay = Number(delayInput.value);
   if (!Number.isInteger(delay) || delay < 0 || delay > 60) {
-    showStatus("Informe um número inteiro entre 0 e 60.", true);
+    showStatus("Enter a whole number from 0 to 60.", true);
     return;
   }
   saveButton.disabled = true;
@@ -93,7 +93,7 @@ saveButton.addEventListener("click", function () {
     saveButton.disabled = false;
     if (error) { showStatus(error, true); return; }
     delayInput.value = result.delay;
-    showStatus("Atraso salvo: " + result.delay + " s.", false);
+    showStatus("Delay saved: " + result.delay + " s.", false);
   });
 });
 
@@ -102,7 +102,7 @@ stopButton.addEventListener("click", function () {
   request({ action: "pause" }, function (result, error) {
     stopButton.disabled = false;
     if (error) { showStatus(error, true); return; }
-    showStatus("Retorno automático pausado. Pressione Home para voltar à Home original.", false);
+    showStatus("Automatic return paused. Press Home to return to the stock Home screen.", false);
   });
 });
 

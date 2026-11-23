@@ -103,7 +103,7 @@ class WatcherSettingsTests(unittest.TestCase):
         try:
             with urllib.request.urlopen(base + "/settings.html", timeout=2) as response:
                 self.assertEqual(response.status, 200)
-                self.assertIn(b"Atraso ao apertar Home", response.read())
+                self.assertIn(b"Home button delay", response.read())
 
             with post({"action": "set_delay", "delay": 4}) as response:
                 self.assertEqual(json.load(response)["delay"], 4)

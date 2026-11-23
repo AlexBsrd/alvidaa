@@ -1,44 +1,66 @@
-# Alvidaa Home — instalação própria para a 55A6NV
+# Alvidaa Home — dedicated installation for the 55A6NV
 
-**Estado:** instalada e verificada em 19/11/2026. A TV carregou `/`, conectou ao WebSocket `/ws` e recebeu os recursos do launcher.
+**Status:** installed and verified on 2026-11-19. The TV loaded `/`, connected to the `/ws` WebSocket, and received the launcher resources.
 
-Este procedimento prepara uma entrada `vidaa-home` no registro web da TV e aponta-a para a URL definida por `serverUrl` em `server/config.json`. Ele usa o Fetcher/FaaS já instalado, cujo UID (`314`) é o dono do `/APPS/websdk/Appinfo.json` nesta TV. Assim, não precisa do `postinst` root que foi provado na investigação.
+This procedure creates a `vidaa-home` entry in the TV's web registry and points it to the URL defined by `serverUrl` in `server/config.json`. It uses the installed Fetcher/FaaS, whose UID (`314`) owns `/APPS/websdk/Appinfo.json` on this TV. Therefore, it does not require the root `postinst` proven during the investigation.
 
-Antes de abrir o instalador, configure `serverUrl` com a origem HTTP do host
-que serve o Alvidaa (por exemplo, `http://alvidaa-server.local:8765`). O valor
-é local à instalação e não deve conter um endereço LAN real em arquivos
-publicados.
+Before opening the installer, set `serverUrl` to the HTTP origin of the host
+serving Alvidaa (for example, `http://alvidaa-server.local:8765`). This value
+is local to the installation and must not contain a real LAN address in
+published files.
 
-## Páginas
+## Pages
 
-- Instalar: `/install-alvidaa-home.html` no servidor configurado.
-- Remover: `/remove-alvidaa-home.html` no servidor configurado.
+- Install: `/install-alvidaa-home.html` on the configured server.
+- Remove: `/remove-alvidaa-home.html` on the configured server.
 
-As páginas só fazem a alteração quando o botão correspondente é acionado (ou quando o instalador é aberto com `?install=confirm`, usado nesta execução autorizada). A instalação leu o registro atual, criou a cópia `/APPS/websdk/Appinfo.json.alvidaa-home.bak`, acrescentou uma única entrada e confirmou a leitura de volta. Os outros quatro apps permaneceram iguais. Ela não apaga apps preexistentes, não muda a configuração do servidor e não reinicia a TV.
+The pages make changes only when the corresponding button is clicked (or when
+the installer is opened with `?install=confirm`, as it was during this
+authorized run). The installer read the current registry, created the
+`/APPS/websdk/Appinfo.json.alvidaa-home.bak` backup, added one entry, and
+verified it by reading the registry back. The other four apps remained
+unchanged. It does not delete pre-existing apps, change the server
+configuration, or reboot the TV.
 
-## Desinstalação
+## Uninstallation
 
-A página de remoção elimina somente a entrada `vidaa-home`. Se nenhuma outra entrada tiver mudado desde a instalação, restaura os bytes originais do registro e apaga a cópia. Se houver alterações posteriores de outros apps, mantém essas alterações, remove só `vidaa-home` e deixa a cópia de segurança para recuperação manual.
+The removal page deletes only the `vidaa-home` entry. If no other entries have
+changed since installation, it restores the registry's original bytes and
+deletes the backup. If other apps have changed since then, it preserves those
+changes, removes only `vidaa-home`, and keeps the backup for manual recovery.
 
-## Configurações do Home watcher
+## Home watcher settings
 
-No launcher servido pelo servidor Python externo, o ícone de engrenagem ao lado
-do indicador de status abre `/settings.html`; use as setas do controle para
-focar a engrenagem e pressione OK/Enter. Na página de configurações, as setas
-navegam entre o campo e os botões. O campo **Atraso ao apertar Home** define,
-em segundos, quanto esperar depois que o servidor detecta a Home original
-antes de reabrir o Alvidaa (0–60; padrão 0). **Parar serviço** pausa somente
-esse retorno automático; HTTP, WebSocket e MQTT permanecem ativos. Depois,
-pressione Home para ir à Home original e abra Alvidaa manualmente. Ao carregar
-o launcher, o watcher é reativado. Esses controles não são implementados pela
-bridge Go executada na TV.
+In the launcher served by the external Python server, the gear icon next to the
+status indicator opens `/settings.html`; use the remote's arrow keys to focus
+the gear and press OK/Enter. On the settings page, the arrow keys navigate
+between the field and the buttons. **Home button delay** sets how many seconds
+to wait after the server detects the stock Home screen before reopening
+Alvidaa (0–60; default 0). **Stop service** pauses only automatic return; HTTP,
+WebSocket, and MQTT remain active. Then press Home to return to the stock Home
+screen and open Alvidaa manually. Loading the launcher resumes the watcher.
+These controls are not implemented by the Go bridge running on the TV.
 
-## Estado e limites
+## Status and limitations
 
-- O servidor Python precisa estar ativo no host definido por `serverUrl`, para o tile abrir.
-- O watcher do servidor foi ativado após a instalação: ao detectar a tela inicial nativa da VIDAA, o servidor reabre o app Home do Alvidaa. Isso faz o botão Home retornar ao Alvidaa; o usuário confirmou esse retorno automático após pressionar o botão. A configuração é lida ao vivo pelo servidor.
-- A TV precisou ser desligada e ligada para atualizar a lista de apps; depois disso, o tile H apareceu e abriu o Alvidaa.
-- Antes da instalação, o `Appinfo.json` era um arquivo regular de 9.667 bytes, dono `314:902`, modo `0664`, JSON válido com 4 entradas, sem `vidaa-home` e sem outros tiles chamados `Home`.
-- Após a instalação, contém 5 entradas, uma `vidaa-home` apontando para `serverUrl`, mantendo dono `314:902` e modo `0664`. O backup tem os 9.667 bytes originais e quatro entradas.
-- A configuração atual do watcher está ativada (server/config.json, watcher.enabled: true). Uma cópia anterior está em server/config.json.before-watcher-20261119-171537.bak. Para voltar ao comportamento nativo do botão Home, desative watcher.enabled e reinicie o servidor. O servidor permanece ativo na janela Konsole.
-- O servidor Alvidaa foi deixado ativo no notebook para a página continuar funcionando. O receptor de diagnóstico foi encerrado.
+- The Python server must be running on the host specified by `serverUrl` for
+  the tile to open.
+- The server watcher was enabled after installation. When it detects the
+  native VIDAA Home screen, the server reopens the Alvidaa Home app. This makes
+  the TV's Home button return to Alvidaa; the owner confirmed this automatic
+  return after pressing the button. The server reads the setting live.
+- The TV had to be power-cycled to refresh the app list. Afterward, the H tile
+  appeared and opened Alvidaa.
+- Before installation, `Appinfo.json` was a regular 9,667-byte file, owned by
+  `314:902`, mode `0664`, with valid JSON containing four entries, no
+  `vidaa-home`, and no other tiles named `Home`.
+- After installation, it contains five entries, including one `vidaa-home`
+  pointing to `serverUrl`; ownership remains `314:902` and mode remains
+  `0664`. The backup contains the original 9,667 bytes and four entries.
+- The current watcher setting is enabled
+  (`server/config.json`, `watcher.enabled: true`). A previous copy is at
+  `server/config.json.before-watcher-20261119-171537.bak`. To restore the
+  native Home button behavior, disable `watcher.enabled` and restart the
+  server. The server remains running in the Konsole window.
+- The Alvidaa server was left running on the notebook so the page would remain
+  available. The diagnostic receiver was stopped.

@@ -1,63 +1,117 @@
-# Migração do servidor Alvidaa para um equipamento sempre ligado
+# Migrating the Alvidaa server to an always-on host
 
-Estado em 23/11/2026: a TV Hisense `55A6NV` (nome da plataforma no browser: `55A60QUV`; firmware `V0000.09.60L.Q0623`) usa o Alvidaa Home no endereço definido em `server/config.json` (`serverUrl`). O host atual é o notebook, com endereço LAN configurado localmente. O servidor Python está rodando em uma janela Konsole visível e o watcher está ativado. A TV abre YouTube pelo launcher e o botão Home retorna ao Alvidaa.
+Status as of 2026-11-23: the Hisense `55A6NV` TV (browser platform name:
+`55A60QUV`; firmware `V0000.09.60L.Q0623`) uses Alvidaa Home at the address
+defined by `server/config.json` (`serverUrl`). The current host is the notebook,
+with its LAN address configured locally. The Python server is running in a
+visible Konsole window, and the watcher is enabled. The TV opens YouTube from
+the launcher, and the Home button returns to Alvidaa.
 
-## Objetivo
+## Goal
 
-Mover o servidor para um host que fique ligado, mantendo os mesmos recursos e o watcher. Usar uma reserva DHCP/endereço estável no novo host e, se disponível, manter a porta 8765.
+Move the server to an always-on host while retaining the same features and
+watcher. Use a DHCP reservation or another stable address for the new host and,
+if available, keep port 8765.
 
-## Operação atual no notebook
+## Current notebook setup
 
-O destino permanente ainda não foi escolhido; por enquanto, a TV continua usando o notebook. O servidor roda pelo ambiente próprio do projeto em `server/venv` e permanece em uma janela Konsole visível. O processo atende na porta 8765. Para o futuro host dedicado, ainda será necessário escolher um endereço estável e mantê-lo na mesma rede da TV.
+The permanent destination has not been chosen yet, so the TV continues to use
+the notebook for now. The server runs in the project's `server/venv` environment
+and remains in a visible Konsole window. It listens on port 8765. A stable
+address on the same network as the TV will need to be chosen for the future
+dedicated host.
 
-Na raiz do repositório, para abrir novamente uma janela visível, execute:
+From the repository root, run this command to open a visible server window:
 
     ./server/start-visible.sh
 
-O script lê o endereço da TV de `server/.host` (arquivo local, não versionado), usa a porta 8765 por padrão e recusa iniciar se a porta já estiver ocupada. A dependência Python está fixada em `server/requirements.txt` (`paho-mqtt` 2.2.0); em uma instalação nova, recrie `server/venv` com esses requisitos. O servidor não foi configurado para iniciar sozinho no login, para manter a execução visível e evitar uma instância oculta.
+The script reads the TV address from `server/.host` (a local, untracked file),
+uses port 8765 by default, and refuses to start if the port is already in use.
+The Python dependency is pinned in `server/requirements.txt` (`paho-mqtt`
+2.2.0); on a new installation, recreate `server/venv` with these requirements.
+The server is not configured to start automatically at login, keeping its
+execution visible and avoiding a hidden instance.
 
-O tile instalado na TV mantém uma URL própria no registro dela. `serverUrl` em `server/config.json` é a fonte central para as páginas, relatórios e operações de instalação/migração; se o endereço do host mudar, atualize esse campo, reinicie o servidor e abra `/migrate-alvidaa-home-url.html?migrate=confirm` na TV para atualizar o tile persistido. Cada migração cria um backup novo, sem sobrescrever backups anteriores. A migração para um equipamento dedicado fica adiada; não é necessário fazer uma reserva DHCP no roteador para continuar usando o notebook com o IP manual atual.
+The installed TV tile keeps its own URL in the TV registry. `serverUrl` in
+`server/config.json` is the central source for pages, reports, and
+installation/migration operations. If the host address changes, update that
+field, restart the server, and open
+`/migrate-alvidaa-home-url.html?migrate=confirm` on the TV to update the
+persisted tile URL. Each migration creates a new backup without overwriting
+earlier backups. Migration to a dedicated host is deferred; a DHCP reservation
+on the router is not needed to keep using the notebook with its current
+manually configured IP address.
 
-## Dados necessários antes da migração
+## Information needed before migration
 
-- Modelo do equipamento e sistema operacional.
-- Endereço IP reservado para ele na rede.
-- Conta SSH ou acesso local ao host.
-- Confirmar que ele fica ligado e na mesma rede da TV.
-- Acesso ao notebook atual durante o corte, para rollback.
+- Host model and operating system.
+- A reserved IP address on the network.
+- An SSH account or local access to the host.
+- Confirmation that it will stay powered on and on the same network as the TV.
+- Access to the current notebook during cutover for rollback.
 
-Não registrar senhas, tokens ou chaves privadas neste documento.
+Do not record passwords, tokens, or private keys in this document.
 
-## Arquivos necessários
+## Required files
 
-O servidor de referência é `server/vidaa_server.py` (Python), com dependência `paho-mqtt`. O diretório `server/keys/` contém as credenciais emparelhadas com esta TV:
+The server entry point is `server/vidaa_server.py` (Python), with the
+`paho-mqtt` dependency. The `server/keys/` directory contains the credentials
+paired with this TV:
 - `tokens.json`
 - `vidaa_cert.pem`
 - `vidaa_key.pem`
 
-São segredos: transferir por SSH/SCP, manter o diretório acessível apenas à conta do servidor (arquivos modo 0600; diretório 0700) e nunca anexá-los a mensagens ou arquivos de revisão. Não parear outro servidor enquanto a sessão atual estiver ativa.
+These are secrets: transfer them over SSH/SCP, restrict the directory to the
+server account (files mode 0600; directory mode 0700), and never attach them to
+messages or review files. Do not pair another server while the current session
+is active.
 
-Copiar também `server/config.json` (watcher ligado) e a pasta `launcher/`. Excluir `.git` e o ambiente virtual atual; recriar o ambiente no host.
+Also copy `server/config.json` (watcher enabled) and the `launcher/` directory.
+Exclude `.git` and the current virtual environment; recreate the environment
+on the host.
 
-## Ordem de corte
+## Cutover sequence
 
-1. Reservar o IP do host no roteador. Ainda não alterar o tile da TV.
-2. Copiar o projeto, as credenciais e a configuração para o host.
-3. Criar um ambiente Python, instalar `paho-mqtt` e preparar um serviço de inicialização (por exemplo systemd, em Linux).
-4. Parar o servidor do notebook. **Não executar dois servidores com as mesmas credenciais ao mesmo tempo:** a TV/broker desconecta uma sessão em favor da outra.
-5. Iniciar o servidor no novo host e verificar conexão MQTT, `GET /`, WebSocket `/ws` e estado Live.
-6. Atualizar a entrada `vidaa-home` em `/APPS/websdk/Appinfo.json` para o novo URL e ícone, preservando todas as outras entradas. A instalação atual foi feita por um módulo FaaS dedicado; o instalador original recusa alterar uma entrada existente, então criar uma ação de migração específica com backup e verificação de leitura de volta. Não clicar em “Install as App” sem adaptar esse fluxo.
-7. No televisor, abrir o tile H; confirmar Live, abrir YouTube, pressionar Home e confirmar o retorno automático. Conferir logs no novo host.
-8. Só após confirmar, deixar o servidor do notebook parado e registrar a reversão.
+1. Reserve the host IP address on the router. Do not change the TV tile yet.
+2. Copy the project, credentials, and configuration to the host.
+3. Create a Python environment, install `paho-mqtt`, and prepare a startup
+   service (for example, systemd on Linux).
+4. Stop the notebook server. **Do not run two servers with the same
+   credentials at the same time:** the TV/broker disconnects one session in
+   favor of the other.
+5. Start the server on the new host and verify the MQTT connection, `GET /`,
+   WebSocket `/ws`, and Live status.
+6. Update the `vidaa-home` entry in `/APPS/websdk/Appinfo.json` with the new URL
+   and icon, preserving all other entries. The current installation used a
+   dedicated FaaS module; the original installer refuses to modify an existing
+   entry, so create a dedicated migration action with a backup and read-back
+   verification. Do not click “Install as App” without adapting this flow.
+7. On the TV, open the H tile; confirm Live status, open YouTube, press Home,
+   and confirm the automatic return. Check the logs on the new host.
+8. Only after verification, leave the notebook server stopped and document the
+   rollback procedure.
 
-## Inicialização automática e observabilidade
+## Automatic startup and observability
 
-No host Linux, executar como usuário dedicado, com `Restart=always`, caminho de trabalho explícito, saída no journal e `systemctl enable --now`. Documentar o nome do serviço, caminho do checkout, IP/porta e como consultar logs. Não abrir a porta do MQTT na rede; o host inicia a conexão de saída para a TV na porta 36669. O HTTP 8765 precisa aceitar conexão da TV na rede local.
+On the Linux host, run the server as a dedicated user with `Restart=always`, an
+explicit working directory, output in the journal, and `systemctl enable
+--now`. Document the service name, checkout path, IP/port, and how to view the
+logs. Do not expose the MQTT port on the network; the host initiates an
+outbound connection to the TV on port 36669. HTTP port 8765 must accept
+connections from the TV on the local network.
 
-## Reversão
+## Rollback
 
-Manter o checkout, a configuração e as credenciais atuais do notebook sem alterações até o fim do teste. Se o novo host falhar, parar o serviço nele antes de iniciar o servidor do notebook (uma sessão por TV), restaurar a URL antiga da entrada `vidaa-home` com verificação de leitura de volta e conferir o tile.
+Keep the current notebook checkout, configuration, and credentials unchanged
+until testing is complete. If the new host fails, stop its service before
+starting the notebook server (one session per TV), restore the old URL in the
+`vidaa-home` entry with read-back verification, and check the tile.
 
-## Próxima informação
+## Next step
 
-A migração para outro equipamento está pendente porque o destino ainda não foi escolhido. Enquanto isso, manter o servidor atual no notebook e usar `server/start-visible.sh` para repetir sua inicialização. Ao escolher o host 24/7, definir para ele um endereço estável, atualizar localmente `serverUrl` e seguir a ordem de corte e reversão acima. Não publique os endereços LAN usados na configuração local.
+Migration to another host is pending because a destination has not yet been
+chosen. In the meantime, keep the current server on the notebook and use
+`server/start-visible.sh` to start it again. Once the 24/7 host is selected,
+assign it a stable address, update `serverUrl` locally, and follow the cutover
+and rollback sequences above. Do not publish the LAN addresses used in the
+local configuration.
