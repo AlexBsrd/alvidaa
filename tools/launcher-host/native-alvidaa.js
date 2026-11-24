@@ -357,6 +357,9 @@
           this._platform = root.AlvidaaNativePlatform(sdk, function (data) {
             var firstPayload = !vm._payloadReceived;
             vm._payloadReceived = true;
+            // The native adapter can first emit an empty list while retrying.
+            // Keep saved favorite slots until apps load or retries finish.
+            vm._appsResolved = (Array.isArray(data.apps) && data.apps.length > 0) || !data.retrying;
             vm._lastData = data;
             vm.apps = vm.sortRecent(vm.filterApps(data.apps));
             vm.sources = vm.sortInputs(vm.filterInputs(data.sources));
@@ -426,6 +429,7 @@
         stop: function () {
           this._running = false;
           this._payloadReceived = false;
+          this._appsResolved = false;
           if (this._platform) this._platform.stop();
           clearInterval(this._clock);
           if (this._autoSwitchTimer) {
@@ -561,6 +565,13 @@
                   app = this.apps[j];
                   break;
                 }
+              }
+              if (!app && !this._appsResolved && !this.apps.length) {
+                // First frame (issue #54): the saved pins are known before the
+                // platform callback lands. Hold their slots so the tiles after
+                // them do not shift when the real favorites arrive.
+                items.push({ kind: "favorite-pending", label: "", sub: "" });
+                count++;
               }
               if (app) {
                 items.push({
@@ -1346,7 +1357,7 @@
             return;
           }
           var item = this.appItems()[this.app];
-          if (!item) return;
+          if (!item || item.kind === "favorite-pending") return;
           if (item.kind === "favorite") {
             this.showToast("Opening " + (item.label || "app") + "\u2026");
             this.recordLaunch(item.appId);
@@ -2133,7 +2144,18 @@
                 "radial-gradient(circle at 50% 46%, rgba(255,255,255,0.12), rgba(255,255,255,0) 70%)"
             }) }));
           }
-          if (item.kind === "favorite") {
+          if (item.kind === "favorite-pending") {
+            // Same 108px icon box as a real favorite, no letter badge, so the
+            // icon swaps in without a shift.
+            children.push(h("div", {
+              attrs: { "data-favorite-placeholder": "true", "aria-hidden": "true" },
+              style: box((DOCK_SIZE - 108) / 2, 40, 108, 108, {
+                borderRadius: 26, overflow: "hidden",
+                backgroundColor: "rgba(9,13,22,0.56)",
+                border: "1px solid rgba(255,255,255,0.10)"
+              })
+            }));
+          } else if (item.kind === "favorite") {
             // Subtle pin star top-left.
             children.push(h("div", { style: box(20, 15, 22, 22, {
               fontSize: 15, lineHeight: 22,
