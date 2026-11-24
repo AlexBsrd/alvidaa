@@ -1,0 +1,8 @@
+{
+    "name": "re_sshd",
+    "version": "1.0.0",
+    "main": "index.js",
+    "type": "commonjs",
+    "selfStart": false,
+    "permission": {}
+}

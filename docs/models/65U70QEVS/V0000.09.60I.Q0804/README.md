@@ -9,7 +9,7 @@
 | Kernel | 5.15.192 (Clang 17, Android toolchain) |
 | Browser | Chromium 111.0 (Odin) |
 | Root method | 100U7Q chain (unchanged) |
-| Root status | **achieved** (2026-11-24) |
+| Root status | **persistent** (2026-11-24) |
 
 ## Root chain
 
@@ -60,9 +60,10 @@ static binary. We built it with zig cc targeting `aarch64-linux-musl`.
 | 03 | Superwatch socket | [03-superwatch-socket.md](findings/03-superwatch-socket.md) |
 | 04 | Architecture detection | [04-arch-detection.md](findings/04-arch-detection.md) |
 | 05 | Root SSH achieved | [05-root-ssh.md](findings/05-root-ssh.md) |
+| 06 | Boot persistence | [06-boot-persistence.md](findings/06-boot-persistence.md) |
 
-## Not persistent
+## Boot persistence
 
-The root install does **not survive a TV reboot**. All iptables rules are
-cleared and the Dropbear process is killed on power cycle. To restore,
-re-trigger the install chain.
+Root SSH survives reboots via the `re_sshd` service, which re-arms
+Dropbear through the superwatch socket ~30 seconds after boot. No manual
+intervention required.
