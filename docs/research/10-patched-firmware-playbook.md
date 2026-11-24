@@ -39,6 +39,7 @@
 | V0000.09.09O.P0930 (65E86GEVS (serial type 65E8GE), EM_B) | MTK9618 (mt5879; aarch64 kernel, armhf userland) | open | open | n-a | untested | achieved | [@noctonca](https://github.com/noctonca) |
 | V0000.09.60A.Q0707 (65A70LAVT) (65A70LAVT (serial type 65A7NA), AU (EM_C, countryID AUS)) | MTK9603 (MT5896) | open | gated | working | untested | achieved | [u/sl3yr84](https://reddit.com/user/sl3yr84) |
 | V0000.09.60A.Q0602 (55U65QEVS) (55U65QEVS (retail 55U7QTUK; serial type 55U6QE), EU_A (Great Britain)) | MTK9618 (aarch64 kernel 5.4.302, 32-bit ARM userland; mt5879) | open | closed | gated | untested | achieved | [@gwerneckp](https://github.com/gwerneckp) |
+| V0000.09.60I.Q0804 (65U70QEVS (65U7QE), EU_A (ESP)) | MT9655 (aarch64 native — unlike 100U7Q which is 32-bit ARM) | open | open | untested | untested | achieved | [@jasimancas](https://github.com/jasimancas) |
 <!-- INVENTORY:END -->
 
 **Read of the table:** the July EU_A reporter observed `fileWrite` rejected

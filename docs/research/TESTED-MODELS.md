@@ -49,6 +49,7 @@ builds.
 | 65E86GEVS (serial type 65E8GE) | EM_B | MTK9618 (mt5879; aarch64 kernel, armhf userland) | U09.09 | V0000.09.09O.P0930 | ? | Chromium 111 "odin" (api 3.0.1) | untested | achieved | [@noctonca](https://github.com/noctonca) |
 | 65A70LAVT (serial type 65A7NA) | AU (EM_C, countryID AUS) | MTK9603 (MT5896) | U09.60 | V0000.09.60A.Q0707 (65A70LAVT) | ? | Chromium 111.5563.5.1 "Odin" (armv7l) | untested | achieved | [u/sl3yr84](https://reddit.com/user/sl3yr84) |
 | 55U65QEVS (retail 55U7QTUK; serial type 55U6QE) | EU_A (Great Britain) | MTK9618 (aarch64 kernel 5.4.302, 32-bit ARM userland; mt5879) | U09.60 | V0000.09.60A.Q0602 (55U65QEVS) | untested (SSDP silent in recon; 36669/7000 answer) | Chromium 111 "odin" (WebExplorer/5.2.1) | working | achieved | [@gwerneckp](https://github.com/gwerneckp) |
+| 65U70QEVS (65U7QE) | EU_A (ESP) | MT9655 (aarch64 native — unlike 100U7Q which is 32-bit ARM) | U09.60 | V0000.09.60I.Q0804 | 3290 | Chromium 111.0.0.0 "Odin" (aarch64) | working | achieved | [@jasimancas](https://github.com/jasimancas) |
 <!-- INVENTORY:END -->
 
 ## What each token means on each unit
@@ -191,6 +192,13 @@ never hand-edit between the markers.
 - `launcher` **working** — Lane 3 component swap on CHB; install/rollback identical to 65a85qevs (pinned md5 match).
 - `identity_gate` **gated** — Hisense_SupportAppConfig() = true; editing websdk/Appinfo.json byte-identically still returns the 503.
 - `root` **achieved** — Node TCP shell on :8008 as uid 0 (no dropbear/sshd/nc on this build; all persistent fs nosuid). Re-armed by the BaseService autostart ~19 s after each boot.
+
+**65U70QEVS (65U7QE) — V0000.09.60I.Q0804**
+- `pairing` **working** — RemoteNow MQTT on 36669, cert + token auth, auto-pairs with the launcher server.
+- `launcher` **working** — Lane 1 operational (web launcher via /api/open). Admin web UI for sources/apps. Lane 3 (native) untested on this unit.
+- `file_bridge_traversal` **open** — fileRead resolves relative to /APPS, explicit .. blocking on Q0804. All paths inside /APPS readable.
+- `file_bridge_write` **open** — fetchFile (FaaS fetcher) writes arbitrary files as uid 314 to any absolute path under /APPS. Verified with test file write+readback.
+- `root` **achieved** — Root SSH on port 8008, key-only ed25519 auth. Dropbear 2022.83 aarch64 static-pie (433 KB, built with zig cc + musl). IPK install via superwatch socket commands 83+82. Postinst runs as uid 0 with full capabilities (CapEff 000001ffffffffff). Firewall rule injected into FIREWALL_IN_EULAON. ALV_BLOCK telemetry chain (15 rules). No boot persistence — reboot clears all; re-arm with the install chain.
 <!-- INVENTORY_DETAIL:END -->
 
 ## Community reports awaiting details
