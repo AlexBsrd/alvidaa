@@ -224,7 +224,7 @@ func (h *Handler) iconBytes(appID, url string) ([]byte, string, error) {
 	safe := safeAppID(appID)
 	dataPath := filepath.Join(h.iconDir, safe+".img")
 	typePath := filepath.Join(h.iconDir, safe+".type")
-	client := &http.Client{Timeout: 8 * time.Second}
+	client := &http.Client{Timeout: 3 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, "", err

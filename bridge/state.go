@@ -219,6 +219,15 @@ func (b *Bridge) sourcesList() []map[string]any {
 	return b.sources
 }
 
+func appURL(a map[string]any) string {
+	for _, k := range []string{"url", "URL", "Url", "httpURL", "httpUrl"} {
+		if u, ok := a[k].(string); ok {
+			return u
+		}
+	}
+	return ""
+}
+
 func toMapList(v any) []map[string]any {
 	raw, ok := v.([]any)
 	if !ok {
@@ -355,10 +364,13 @@ func (b *Bridge) launch(name string) map[string]any {
 
 func appPayload(app map[string]any) map[string]any {
 	out := map[string]any{}
-	for _, k := range []string{"appId", "name", "url", "urlType", "storeType"} {
+	for _, k := range []string{"appId", "name", "urlType", "storeType", "StoreType"} {
 		if v, ok := app[k]; ok {
 			out[k] = v
 		}
+	}
+	if u := appURL(app); u != "" {
+		out["url"] = u
 	}
 	return out
 }
@@ -443,10 +455,10 @@ func (b *Bridge) launchHome(name string) map[string]any {
 	// stale entry pointing at a retired external server cannot take over.
 	var home, homeLoop map[string]any
 	for _, a := range apps {
-		if a["appId"] != "vidaa-home" {
+		if !strings.EqualFold(fmt.Sprint(a["appId"]), name) && !strings.EqualFold(fmt.Sprint(a["mediaId"]), name) {
 			continue
 		}
-		if u, _ := a["url"].(string); strings.Contains(u, fmt.Sprintf("127.0.0.1:%d/", b.port)) && homeLoop == nil {
+		if u := appURL(a); strings.Contains(u, fmt.Sprintf("127.0.0.1:%d", b.port)) && homeLoop == nil {
 			homeLoop = a
 		}
 		if home == nil {
@@ -459,8 +471,8 @@ func (b *Bridge) launchHome(name string) map[string]any {
 	}
 	if app == nil {
 		for _, a := range apps {
-			u, _ := a["url"].(string)
-			if strings.Contains(u, fmt.Sprintf("127.0.0.1:%d/", b.port)) {
+			u := appURL(a)
+			if strings.Contains(u, fmt.Sprintf("127.0.0.1:%d", b.port)) {
 				app = a
 				break
 			}
@@ -468,8 +480,8 @@ func (b *Bridge) launchHome(name string) map[string]any {
 	}
 	if app == nil {
 		for _, a := range apps {
-			u, _ := a["url"].(string)
-			if strings.Contains(u, fmt.Sprintf(":%d/", b.port)) {
+			u := appURL(a)
+			if strings.Contains(u, fmt.Sprintf(":%d", b.port)) {
 				app = a
 				break
 			}
@@ -484,10 +496,16 @@ func (b *Bridge) launchHome(name string) map[string]any {
 		}
 	}
 	if app == nil {
+		for _, a := range apps {
+			if strings.Contains(strings.ToLower(fmt.Sprint(a)), "alvidaa") {
+				j, _ := json.Marshal(a)
+				log.Printf("watcher: applist candidate: %s", j)
+			}
+		}
 		return map[string]any{"ok": false, "error": "launcher app not found in applist"}
 	}
 	b.call("ui_service", "launchapp", appPayload(app))
-	return map[string]any{"ok": true, "launched": app["name"], "url": app["url"]}
+	return map[string]any{"ok": true, "launched": app["name"], "url": appURL(app)}
 }
 
 // watcherLoop polls state/inputs/apps on the same cadence as the Pi server.
