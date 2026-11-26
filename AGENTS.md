@@ -87,3 +87,10 @@ Two lanes share one TV:
    and run `scripts/gen-inventory.py` — the README compact matrix and the
    full table in `docs/research/TESTED-MODELS.md` both regenerate from it.
    By PR.
+5. **PR hygiene (do not dump your session scratchpad):** Model-report PRs
+   must ship **docs + JSON only** (`docs/models/<Model>/<FW>/`,
+   `docs/models/README.md`, `inventory.json`, `exploits.json`, regenerated
+   tables). Do not commit new `tools/<model>/` exploit harnesses, `postinst*`,
+   `rshell*`, `make_installer*`, `batches/`, `source/re_sshd/`, or throwaway
+   probe HTML files — `scripts/check-payloads.sh` will fail the PR. Keep
+   launcher/bridge/native-Home code changes in separate product PRs.

@@ -1,6 +1,8 @@
 ## What this adds
 
-<!-- One paragraph: which model, which firmware string, which result. -->
+<!-- One paragraph: which model, which firmware string, which result.
+     Keep Model Report PRs (docs + JSON only) separate from Product PRs
+     (launcher / server / bridge / tools/launcher-host). -->
 
 ## Checklist
 
@@ -16,21 +18,27 @@
       README keeps a compact one.
 - [ ] If this adds a model guide, it follows
       [`docs/models/_TEMPLATE.md`](../docs/models/_TEMPLATE.md) — including the
-      **What this guide includes and leaves out** section.
+      **What this guide includes and leaves out** section — and is indexed in
+      `docs/models/README.md`.
+- [ ] **Model report PRs are docs + JSON only:** no new `tools/<model>/`
+      exploit harnesses, `postinst*`, `rshell*`, `make_installer*`, session
+      `batches/`, `source/re_sshd/`, or scratch probe pages (reference existing
+      classes in prose instead).
 - [ ] `./scripts/check.sh` passes locally.
 - [ ] No private keys, certificates, tokens, device serials, firmware images
       or vendor binaries are included.
-- [ ] Real LAN addresses and MACs are replaced with placeholders. If a capture
-      names a third-party device on the network, redact it — it is not ours to
-      publish.
+- [ ] Real MAC addresses, serials, and third-party network device identifiers
+      are replaced with placeholders.
 - [ ] Every state change has a teardown path written down.
 
 ## Boundary
 
-Read [`docs/DISCLOSURE.md`](../docs/DISCLOSURE.md) before submitting. The short
-version: **findings and architecture are published; working payloads, key
-material and vendor binaries are not.** Describe what property of the firmware
-makes a chain possible, not the artefact that executes it.
+Read [`docs/DISCLOSURE.md`](../docs/DISCLOSURE.md) and [`SECURITY.md`](../SECURITY.md)
+before submitting. The short version: **the launcher, blocklists, and findings
+are published; new turnkey exploit payloads, device credentials, and vendor
+binaries are not.** Describe what property of the firmware makes a chain
+possible, not the artefact that executes it. `scripts/check-payloads.sh`
+enforces this in CI.
 
 ## Evidence
 
