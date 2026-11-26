@@ -27,11 +27,12 @@ What this repo publishes, and what it deliberately does not:[docs/DISCLOSURE.md]
 
 | If you want to… | Go to |
 | --- | --- |
+| **check your TV safely (100% read-only)** | Serve `launcher/` (`python3 -m http.server 8765`) and open `http://<pc-ip>:8765/fingerprint-full.html` in the TV browser — zero writes, zero pairing |
 | **replace your home screen** — no root, reversible | [Quickstart — the launcher](#quickstart--the-launcher) |
 | **root the TV** | [docs/models/](docs/models/) — match your model *and* firmware string, then read [SECURITY.md](SECURITY.md) |
 | **see what works on which TV** | [Tested models](#tested-models) and [EXPLOITS.md](docs/research/EXPLOITS.md) |
 | **contribute a report** | [TESTED-MODELS.md](docs/research/TESTED-MODELS.md) — PR, not issue |
-| **understand what's published and why** | [DISCLOSURE.md](docs/DISCLOSURE.md) |
+| **understand what's published and why** | [DISCLOSURE.md](docs/DISCLOSURE.md) and [SECURITY.md](SECURITY.md) |
 
 ## Three ways to run the launcher
 

@@ -103,9 +103,9 @@ print("\n".join(missing) if missing else f"   {len(guides)} guides indexed")
 sys.exit(1 if missing else 0)
 PY
 
-step "7/10 no secrets or vendor binaries"
+step "7/10 no secrets, MACs, or vendor binaries"
 python3 - <<'PY' || fail=1
-import pathlib, subprocess, sys
+import pathlib, re, subprocess, sys
 
 LIMIT = 2 * 1024 * 1024
 BAD_EXT = {".ipk", ".apk", ".pkg", ".img", ".elf", ".so", ".o", ".a", ".bin", ".ko", ".deb"}
@@ -116,6 +116,14 @@ PATTERNS = (MARK + b"OPENSSH PRIVATE KEY", MARK + b"RSA PRIVATE KEY",
             MARK + b"EC PRIVATE KEY", MARK + b"PGP PRIVATE KEY",
             MARK + b"CERTIFICATE")
 IMAGES = {".png", ".jpg", ".jpeg", ".webp", ".ico", ".gif"}
+MAC_RE = re.compile(r"\b(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}\b")
+PLACEHOLDER_MACS = {
+    "00:00:00:00:00:00",
+    "ff:ff:ff:ff:ff:ff",
+    "aa:bb:cc:dd:ee:ff",
+    "11:22:33:44:55:66",
+    "de:ad:be:ef:00:01",
+}
 
 files = [p for p in subprocess.run(["git", "ls-files", "-z"], capture_output=True,
                                    check=True).stdout.split(b"\0") if p]
@@ -138,6 +146,12 @@ for raw in files:
         if pat in blob:
             bad.append(f"   FAIL {path}: contains '{pat.decode()}'")
             break
+    if path.startswith("docs/models/") and f.suffix.lower() == ".md":
+        text = blob.decode("utf-8", errors="ignore")
+        for m in MAC_RE.findall(text):
+            if m.lower() not in PLACEHOLDER_MACS:
+                bad.append(f"   FAIL {path}: raw MAC address '{m}' — replace with a placeholder like <tv-wifi-mac>")
+                break
 print("\n".join(bad) if bad else f"   {len(files)} files scanned")
 sys.exit(1 if bad else 0)
 PY
