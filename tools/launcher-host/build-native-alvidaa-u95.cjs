@@ -1,0 +1,61 @@
+#!/usr/bin/env node
+'use strict';
+// Build the alvidaa native Home candidate for the 100U7SAU / U950_EU_MP_20251124
+// OperationUI build (9.05.00). Identical to build-native-alvidaa.cjs except the
+// 55A7KAU adapter is swapped for the 75U8QTUK SDK adapter, which matches this
+// unit's contracts (getAppList/{sceneCode:launcher}, getAllInputsData, o2n://
+// events, LAUNCHER_RECOMMEND). The stock sha256 pins the exact unit revision.
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const { hash } = require('./native-trial.cjs');
+const wallpaper = require('./wallpaper.cjs');
+const PARTS = ['native-platform-75u8qtuk.js', 'native-alvidaa.js', 'native-entry.js'];
+const MARKER = 'ALVIDAA_NATIVE_HOME_U95_V1';
+
+function build(stockFile, output, expect, options) {
+  assert.match(String(expect || ''), /^[0-9a-f]{64}$/,
+    'expected sha256 of the stock bundle is required');
+  const stock = fs.readFileSync(stockFile);
+  assert.equal(hash(stock), expect, 'stock bundle does not match the pinned revision');
+  const wallBundle = wallpaper.bundle();
+  let art = 'self.AlvidaaNativeWallpaper=' + JSON.stringify(wallpaper.dataUri()) + ';' +
+    '\nself.AlvidaaNativeWallpapers=' + JSON.stringify(wallBundle) + ';';
+  const inputArt = options && options.inputArt;
+  if (inputArt && typeof inputArt === 'object' && Object.keys(inputArt).length > 0) {
+    art += '\nself.AlvidaaNativeInputArt=' + JSON.stringify(inputArt) + ';';
+  }
+  const deviceArt = options && options.deviceArt;
+  if (deviceArt && typeof deviceArt === 'object' && deviceArt.icons) {
+    art += '\nself.AlvidaaNativeDeviceArt=' + JSON.stringify(deviceArt) + ';';
+  }
+  const appColours = options && options.appColours;
+  if (appColours && typeof appColours === 'object' && Object.keys(appColours).length > 0) {
+    art += '\nself.AlvidaaNativeAppColours=' + JSON.stringify(appColours) + ';';
+  }
+  const candidate = '/* ' + MARKER + '\n * variant: native-alvidaa.js on the 75u8qtuk SDK adapter\n */\n' + art + '\n' +
+    stock + '\n;\n' +
+    PARTS.map(file => fs.readFileSync(path.join(__dirname, file), 'utf8')).join('\n;\n');
+  new vm.Script(candidate, { filename: 'native-candidate-u95.js' });
+  if (output) {
+    const target = path.resolve(output);
+    const privateRoot = path.resolve(__dirname, '../../firmware') + path.sep;
+    assert.ok(target.startsWith(privateRoot) || target.startsWith('/tmp/'),
+      'vendor-containing output must stay private');
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, candidate, { mode: 0o600 });
+    fs.chmodSync(target, 0o600);
+  }
+  return candidate;
+}
+
+if (require.main === module) {
+  const [stock, output, expect] = process.argv.slice(2);
+  assert.ok(stock && output && expect,
+    'Usage: build-native-alvidaa-u95.cjs private-stock.js private-output.js <expected-sha256>');
+  const candidate = build(stock, output, expect);
+  console.log('Built alvidaa native U95 candidate: ' + Buffer.byteLength(candidate) +
+    ' bytes; sha256 ' + hash(candidate));
+}
+module.exports = { build, PARTS, MARKER };

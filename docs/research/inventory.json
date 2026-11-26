@@ -938,6 +938,37 @@
         "file_bridge_write": "fetchFile (FaaS fetcher) writes arbitrary files as uid 314 to any absolute path under /APPS. Verified with test file write+readback.",
         "root": "Root SSH on port 8008, key-only ed25519 auth. Dropbear 2022.83 aarch64 static-pie (433 KB, built with zig cc + musl). IPK install via superwatch socket commands 83+82. Postinst runs as uid 0 with full capabilities (CapEff 000001ffffffffff). Firewall rule injected into FIREWALL_IN_EULAON. ALV_BLOCK telemetry chain (15 rules). No boot persistence — reboot clears all; re-arm with the install chain."
       }
+    },
+    {
+      "id": "V02.09.50U.Q0311",
+      "model": "100U7SAU (SSDP modelName 100U7QE)",
+      "region": "AU (EUEM AUS)",
+      "soc": "MT9655 (aarch64 kernel 5.15.180, aarch64 userland)",
+      "vidaa_os": "9.05.00",
+      "transport_protocol": "not exposed (stub dd.xml on :3366)",
+      "browser": "Chromium 111 (odin)",
+      "build_date": "?",
+      "tested_by": [
+        "gh:rtype-cpu"
+      ],
+      "capabilities": {
+        "pairing": "working",
+        "launcher": "working",
+        "native_home": "working",
+        "file_bridge_traversal": "untested",
+        "file_bridge_write": "untested",
+        "identity_gate": "untested",
+        "euladpp_untar": "untested",
+        "devtools_forge": "untested",
+        "root": "achieved",
+        "notes": "Model guide: docs/models/100U7SAU/V02.09.50U.Q0311/. SSDP reports modelName 100U7QE (friendlyName 'Living Room TV'); no transport_protocol in the stub. OperationUI 9.05.00-a20260228q (branch VIDAA_UI_MT9655_U950_EU_MP_20251124), CHA-only channel (current -> ./CHA). OTA frozen by owner (/var/local/nightupdate.ini dcm_update=0). Lane 3 native Home works via the operationui app.js /Launcher route component swap using the 75u8qtuk SDK adapter (this build has no getCurrentShowApps/getAppInfoByAppId, so the 55A7KAU adapter does not fit). Lane 2 (loopback bridge + home watcher) was verified first and retired on 2026-11-25. Root = same superwatch family; re_sshd serviceList autostart re-arms dropbear at every cold boot (verified twice)."
+      },
+      "capability_detail": {
+        "pairing": "modern profile via Sidee; an MQTT session kicks a concurrent Sidee session off the broker (one session per TV).",
+        "launcher": "Lane 2 verified 2026-11-25: alvidaa-home tile registered in launcher/allAppsInfo.txt and launched via ui_service/actions/launchapp after a VIDAA sweep; bridge served the page on 127.0.0.1:8770. Retired in favour of lane 3 the same day.",
+        "native_home": "alvidaa native Home via the operationui app.js /Launcher route component swap (candidate pinned to stock sha256 96dc95be6afd0d0f8d5806a8c54e14036ee59ca0a8dd84f68c70072875abb31c; candidate md5 e751bee542bcba88148283e6e600bc8a). Stock backup kept on-device (/var/local/app.js.stock-2026-11-25) and off-TV. Rollback = restore stock app.js + reboot. Owner-confirmed working 2026-11-25; survives reboot.",
+        "root": "Key-only SSH on 8009 with root uid 0; boot persistence via re_sshd BaseService in tv.vidaa.jsservice.basic/CHA/services + one serviceList.json autoStart entry; re-arms at every cold boot (ARMED attempt 1, two consecutive boots verified)."
+      }
     }
   ]
 }

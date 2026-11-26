@@ -41,6 +41,7 @@
 | V0000.09.60A.Q0602 (55U65QEVS) (55U65QEVS (retail 55U7QTUK; serial type 55U6QE), EU_A (Great Britain)) | MTK9618 (aarch64 kernel 5.4.302, 32-bit ARM userland; mt5879) | open | closed | gated | untested | achieved | [@gwerneckp](https://github.com/gwerneckp) |
 | 09.61B.Q0704 (65U7NQTUK, UK) | unknown | untested | untested | untested | untested | untested | [@ponciusz](https://github.com/ponciusz) |
 | V0000.09.60I.Q0804 (65U70QEVS (65U7QE), EU_A (ESP)) | MT9655 (aarch64 native — unlike 100U7Q which is 32-bit ARM) | open | open | untested | untested | achieved | [@jasimancas](https://github.com/jasimancas) |
+| V02.09.50U.Q0311 (100U7SAU (SSDP modelName 100U7QE), AU (EUEM AUS)) | MT9655 (aarch64 kernel 5.15.180, aarch64 userland) | untested | untested | untested | untested | achieved | [@rtype-cpu](https://github.com/rtype-cpu) |
 <!-- INVENTORY:END -->
 
 **Read of the table:** the July EU_A reporter observed `fileWrite` rejected

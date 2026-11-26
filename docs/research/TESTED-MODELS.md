@@ -51,6 +51,7 @@ builds.
 | 55U65QEVS (retail 55U7QTUK; serial type 55U6QE) | EU_A (Great Britain) | MTK9618 (aarch64 kernel 5.4.302, 32-bit ARM userland; mt5879) | U09.60 | V0000.09.60A.Q0602 (55U65QEVS) | untested (SSDP silent in recon; 36669/7000 answer) | Chromium 111 "odin" (WebExplorer/5.2.1) | working | achieved | [@gwerneckp](https://github.com/gwerneckp) |
 | 65U7NQTUK | UK | unknown | U09.61 | 09.61B.Q0704 | unknown | unknown | blocked | untested | [@ponciusz](https://github.com/ponciusz) |
 | 65U70QEVS (65U7QE) | EU_A (ESP) | MT9655 (aarch64 native — unlike 100U7Q which is 32-bit ARM) | U09.60 | V0000.09.60I.Q0804 | 3290 | Chromium 111.0.0.0 "Odin" (aarch64) | working | achieved | [@jasimancas](https://github.com/jasimancas) |
+| 100U7SAU (SSDP modelName 100U7QE) | AU (EUEM AUS) | MT9655 (aarch64 kernel 5.15.180, aarch64 userland) | 9.05.00 | V02.09.50U.Q0311 | not exposed (stub dd.xml on :3366) | Chromium 111 (odin) | working | achieved | [@rtype-cpu](https://github.com/rtype-cpu) |
 <!-- INVENTORY:END -->
 
 ## What each token means on each unit
@@ -206,6 +207,12 @@ never hand-edit between the markers.
 - `file_bridge_traversal` **open** — fileRead resolves relative to /APPS, explicit .. blocking on Q0804. All paths inside /APPS readable.
 - `file_bridge_write` **open** — fetchFile (FaaS fetcher) writes arbitrary files as uid 314 to any absolute path under /APPS. Verified with test file write+readback.
 - `root` **achieved** — Root SSH on port 8008, key-only ed25519 auth. Dropbear 2022.83 aarch64 static-pie (433 KB, built with zig cc + musl). IPK install via superwatch socket commands 83+82. Postinst runs as uid 0 with full capabilities (CapEff 000001ffffffffff). Firewall rule injected into FIREWALL_IN_EULAON. ALV_BLOCK telemetry chain (15 rules). No boot persistence — reboot clears all; re-arm with the install chain.
+
+**100U7SAU (SSDP modelName 100U7QE) — V02.09.50U.Q0311**
+- `pairing` **working** — modern profile via Sidee; an MQTT session kicks a concurrent Sidee session off the broker (one session per TV).
+- `launcher` **working** — Lane 2 verified 2026-11-25: alvidaa-home tile registered in launcher/allAppsInfo.txt and launched via ui_service/actions/launchapp after a VIDAA sweep; bridge served the page on 127.0.0.1:8770. Retired in favour of lane 3 the same day.
+- `native_home` **working** — alvidaa native Home via the operationui app.js /Launcher route component swap (candidate pinned to stock sha256 96dc95be6afd0d0f8d5806a8c54e14036ee59ca0a8dd84f68c70072875abb31c; candidate md5 e751bee542bcba88148283e6e600bc8a). Stock backup kept on-device (/var/local/app.js.stock-2026-11-25) and off-TV. Rollback = restore stock app.js + reboot. Owner-confirmed working 2026-11-25; survives reboot.
+- `root` **achieved** — Key-only SSH on 8009 with root uid 0; boot persistence via re_sshd BaseService in tv.vidaa.jsservice.basic/CHA/services + one serviceList.json autoStart entry; re-arms at every cold boot (ARMED attempt 1, two consecutive boots verified).
 <!-- INVENTORY_DETAIL:END -->
 
 ## Community reports awaiting details
