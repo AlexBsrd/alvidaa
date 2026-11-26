@@ -285,7 +285,8 @@ commit them.
 ### Disclosure
 
 The findings here were reported to Hisense/VIDAA Product Security on
-2026-10-29 and logged as **`VIDAA-PSIRT-2026-005`**; their response is
-recorded in [docs/DISCLOSURE.md](docs/DISCLOSURE.md), which also states what
-this repo publishes and what it withholds. The reasoning behind publishing in
-parallel rather than waiting: [SECURITY.md](SECURITY.md).
+2026-10-29 and logged as **`VIDAA-PSIRT-2026-005`**. Their response, the OTA
+tradeoff, and why we both reported the vulnerability to Hisense and kept this
+repo public for enthusiasts are in [SECURITY.md](SECURITY.md). The repository's
+publication boundary for guides and contributions is in
+[docs/DISCLOSURE.md](docs/DISCLOSURE.md).

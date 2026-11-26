@@ -35,32 +35,54 @@ acknowledged the report and gave this assessment:
 
 They asked for this repository to be taken private and for the exploitation
 detail to be removed from the write-up until the fixes ship. **The repository
-stays public**, and the reasoning is unchanged from the section above: the
-material has been public since 2026-10-29, is forked and mirrored, and is
-discussed in public threads, so making it private now would remove the one
-maintained copy without removing the information. The write-up carries the
-vendor's position at the top of the page instead.
-
-On OTA: the guidance in this repository is stated as a **tradeoff, not a
-recommendation**. Accepting Hisense's fixes means giving up root; keeping root
-means declining future security patches. Both are defensible choices for an
-owner to make deliberately.
+stays public**: the material has been public since 2026-10-29, is forked and
+mirrored, and is discussed in public threads, so making it private now would
+remove the one maintained copy without removing the information. The blog
+write-up carries the vendor's position at the top of the page and stays at the
+architecture/findings level instead.
 
 Status will be updated here as fixes land and as other models in the matrix
 report in.
-The reasoning, stated openly so you can weigh it yourself:
 
-- The documented MQTT control path requires LAN access and pairing. Separately,
-  the browser can reach the unauthenticated localhost file bridge: if the TV
-  loads attacker-controlled content, that content may be able to use the bridge
-  without the attacker being on the LAN. The full remote attack path has not
-  been independently verified; do not expose the TV browser to untrusted pages.
-- No DRM or technical protection measure is circumvented; verified boot is
-  untouched, and nothing here helps pirate content.
-- The vendor has a history of not responding to VIDAA research reports.
-- The defensive value (users can block telemetry, remove ads, control their
-  own TVs) outweighs the marginal risk of LAN-local issues remaining
-  unpatched on end-of-support-adjacent firmware.
+## Why report to Hisense *and* keep this public for enthusiasts?
+
+This project sits between two audiences that often pull in opposite directions:
+security practitioners who ask *"why publish without a 90-day embargo?"* and
+hardware modders who ask *"why tell the vendor at all if they'll patch root?"*
+Here is the reasoning on both sides, stated plainly so you can weigh it
+yourself:
+
+### Why we reported the vulnerabilities to Hisense
+
+- **This isn't a harmless developer toggle — it is a real browser-reachable
+  vulnerability.** The TV's local file bridge (`localhost:9009`) requires no
+  authentication and answers with `Access-Control-Allow-Origin: *`, and on
+  unpatched builds it can write directly to a root-executed boot hook. Any
+  malicious page loaded in the TV's browser could potentially abuse that chain
+  without the attacker even being on the LAN. (The full remote attack path has
+  not been independently verified; do not expose the TV browser to untrusted
+  pages.) Leaving a live drive-by root path unreported leaves millions of
+  non-technical TV owners exposed.
+- **Disclosing did not burn a secret root method.** Per `VIDAA-PSIRT-2026-005`,
+  VIDAA Product Security confirmed the root chain had already been reported to
+  them earlier and was already patched on most newer firmware builds.
+
+### Why we published in parallel and kept the repo public
+
+- **Owner autonomy and defensive value.** Publishing the launcher, telemetry
+  blocklists, and technical findings in parallel lets owners inspect what their
+  hardware does, block unwanted telemetry, and choose how to run their own TVs
+  instead of waiting indefinitely behind an embargo. At the time of initial
+  publication on 2026-10-29, the vendor had no track record of responding to
+  VIDAA research reports (they subsequently replied on 2026-11-07).
+- **Informed choice on OTA updates.** On OTA, this repository states a
+  **tradeoff, not a recommendation**: accepting Hisense's fixes means giving up
+  root; blocking OTA updates to keep root means declining future security
+  patches (including fixes for this local bridge). Reporting the bug gets
+  everyday owners patched, while keeping the research public lets enthusiasts
+  make the OTA tradeoff deliberately on an isolated LAN.
+- **No DRM or piracy.** No DRM or technical protection measure is circumvented;
+  verified boot stays locked and green, and nothing here helps pirate content.
 
 If you are from Hisense and want to discuss any of this: open an issue here
 or reach the repo owner — details will be updated, and findings will be
@@ -74,9 +96,14 @@ own TV's traffic in issues.
 
 ## Publication hygiene (for maintainers)
 
-- `server/keys/` (client certs, `tokens.json`) and `server/iconcache/` are
-  gitignored — never commit them.
-- No LAN IPs, TV MACs, serials or tokens in committed code or docs; use
-  placeholders (`<tv-ip>`) or env vars.
+- `server/keys/` (client certs, `tokens.json`, private SSH keys) and
+  `server/iconcache/` are gitignored — never commit device-specific credentials.
+- No real MAC addresses, serials, device codes, or auth tokens in committed
+  code or docs; use placeholders (`<tv-wifi-mac>`) in documentation. RFC1918
+  example/default LAN IPs in local helper scripts are fine when overridable
+  via env vars (`TV_HOST`).
 - Firmware dumps and extracted vendor binaries stay private — describe
   behavior, do not redistribute vendor code.
+- See [docs/DISCLOSURE.md](docs/DISCLOSURE.md) for what this repo publishes,
+  what it withholds in new contributions, and how `scripts/payloads.deny` is
+  enforced.

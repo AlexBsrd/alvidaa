@@ -879,7 +879,7 @@ check_host-verified by the AdGuard agent; `ota-tv` resolving again at
 DNS level by design, since the kernel now owns that block).
 
 **And the TV left the LAN.** Tailscale (1.104.4, armv7) is on the
-tailnet — `hisensetv-88b863c83aa5`, kernel 4.19.79, key-only SSH
+tailnet — `hisensetv-<ethernet-mac>`, kernel 4.19.79, key-only SSH
 reachable from anywhere, not just the couch. The admin console
 screenshot went into the post with the tailnet IPs and emails blurred.
 

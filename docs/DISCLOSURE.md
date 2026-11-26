@@ -4,33 +4,46 @@ What this repository publishes, what it deliberately does not, and how a
 contributor can tell the difference. Read this before adding a guide or a
 payload.
 
-The short version: **findings are public, payloads are not shipped, and every
-guide says which is which.**
+The short version: **the launcher, blocklists, and findings are public; new
+turnkey exploit payloads, device credentials, and vendor binaries are not
+shipped, and every guide states what it includes and leaves out.**
 
 ## What is published
 
-- **Findings.** What a build does, what was measured, what failed, and the
-  evidence for each claim. Architecture, not incantation.
+- **The launcher and owner tooling.** The no-root launcher, MQTT bridge and
+  pairing client (using the official app's already-public LAN pairing flow),
+  read-only fingerprint/recon probes, AdGuard/kernel telemetry blocklists, and
+  post-root native-launcher tooling.
+- **Findings and architecture.** What a build does, what was measured, what
+  failed, and the evidence for each claim. Architecture, not incantation.
 - **Evidence labels.** Every result is marked *verified* (observed on a
   project device), *community reported* (an owner's report, not reproduced
   here), *hypothesis* (proposed, untested) or *untested*. A claim without a
   device observation stays labelled as a claim.
 - **Teardown paths.** How to undo whatever a guide describes. Reversibility is
   the design law, and a guide without a rollback is incomplete.
-- **Tooling that is safe to run.** Read-only probes, the launcher, the CLI, the
-  deploy scripts. These are the things a normal owner needs.
 
 ## What is not published
 
-- **Working payloads.** No IPK that runs a `postinst` as root, no boot-hook
-  script that arms a unit, no exploit chain packaged as a one-command tool.
-  The guides describe what the chain rests on; they do not ship the chain.
-- **Key material.** No private keys, no tokens, no device certificates, no
-  keystore passwords. `server/keys/` is gitignored and stays that way.
-- **Vendor binaries.** No redistributed vendor executables or libraries.
-  `scripts/check.sh` scans for them and fails the build.
-- **Unit identifiers.** MAC addresses, serials, LAN addresses and device codes
-  are placeholders in published text.
+- **New turnkey exploit payloads.** New contributor guides and newly discovered
+  classes do not ship packaged root-`postinst` IPKs, one-command arming tools,
+  or unpatched persistence scripts. Guides describe *what* property of the
+  firmware makes a chain possible, and contributors are always welcome to
+  record a `rooted, method withheld` row when they prefer not to publish a
+  chain. Enforced paths live in
+  [scripts/payloads.deny](../scripts/payloads.deny) (which also documents the
+  older cohort of already-disclosed reference scripts still in the tree from
+  before this policy was enforced).
+- **Device-specific key material.** No private SSH keys, paired device tokens,
+  or per-TV certificates. `server/keys/` is gitignored and scanned by
+  `scripts/check.sh`. (The generic LAN pairing protocol used by the no-root
+  launcher is public prior art, not per-device key material.)
+- **Vendor binaries and firmware dumps.** No redistributed vendor executables,
+  libraries, APKs, IPKs, or partition images. `scripts/check.sh` scans for
+  them and fails the build.
+- **Unit identifiers.** Real MAC addresses, serials, and device codes are
+  replaced with placeholders in published docs. (RFC1918 example/default LAN
+  IPs in local helper scripts are fine when overridable via `TV_HOST`.)
 
 ## The line, stated by a contributor
 
@@ -71,31 +84,18 @@ everywhere.
 
 ## Vendor coordination
 
-A vulnerability report covering the 2024+ VIDAA firmware issues described in
-this repository was sent to Hisense/VIDAA Product Security
-(`VIDAASecurity@vidaa.com`, `report@connectlife.io`) on **2026-10-29**, and the
-repository was published in parallel rather than waiting on a 90-day window.
+The 2024+ VIDAA findings were reported to Hisense/VIDAA Product Security on
+**2026-10-29** and logged as **`VIDAA-PSIRT-2026-005`** on **2026-11-07**, with
+this repository published in parallel rather than held behind a 90-day embargo.
 
-**Vendor response, 2026-11-07 — `VIDAA-PSIRT-2026-005`:**
+For the vendor's full assessment, why we declined to take the repository
+private, and why we both reported the browser-reachable root vulnerability to
+Hisense *and* keep the research public for enthusiasts (along with the OTA
+tradeoff), see [SECURITY.md](../SECURITY.md).
 
-- The **root path** (unauthenticated localhost bridge, `../` traversal,
-  `/var/local` boot hook) was **reported to them earlier** and is **already
-  fixed on most devices**, with an OTA fix coming for the remaining ones
-  including the reference `50A51HUV`.
-- The **MQTT authentication issue** (client-certificate identity gate and the
-  dynamic credential derivation) is **new to them** and under investigation.
-
-They asked for this repository to be taken private and for the exploitation
-detail to be removed from the write-up until the fixes ship. The repository
-stays public, for the reasons in [SECURITY.md](../SECURITY.md): the material
-has been public since 2026-10-29, is forked and mirrored, and making it private
-now would remove the one maintained copy without removing the information.
-
-The write-up carries the vendor's position at the top of the page, and the
-exploitation detail was toned down to findings rather than removed, on the
-boundary described above.
-
-Status will be annotated here as fixes land and as other models report in.
+The blog write-up carries the vendor's position at the top of the page and
+stays at the architecture/findings level; status in this repository is updated
+as firmware fixes land across models in the matrix.
 
 ## If you are a vendor
 

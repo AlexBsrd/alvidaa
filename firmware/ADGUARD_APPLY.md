@@ -10,8 +10,8 @@ current client inventory). Wiki docs: homelabbr `wiki/wiki/services/adguard-home
 
 | AdGuard client | Identifier | Device |
 | --- | --- | --- |
-| Hisense VIDAA TV | `192.168.0.11` | WiFi MAC `bc:5c:17:bc:46:88` — **moved from `.12` ~2026-11-01**; `.12` is now a TP-Link device |
-| Fire TV Stick | `192.168.0.82` | WiFi MAC `dc:a0:d0:60:b9:73` |
+| Hisense VIDAA TV | `192.168.0.11` | WiFi MAC `<tv-wifi-mac>` — **moved from `.12` ~2026-11-01**; `.12` is now a TP-Link device |
+| Fire TV Stick | `192.168.0.82` | WiFi MAC `<firetv-wifi-mac>` |
 
 ⚠️ Static DHCP reservations for both TV MACs are pending (router-side, owner
 action). Until then, every rule below is keyed to a volatile IP — after any
