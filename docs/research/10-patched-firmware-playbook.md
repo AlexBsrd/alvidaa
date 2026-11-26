@@ -44,6 +44,7 @@
 | V02.09.50U.Q0311 (100U7SAU (SSDP modelName 100U7QE), AU (EUEM AUS)) | MT9655 (aarch64 kernel 5.15.180, aarch64 userland) | untested | untested | untested | untested | achieved | [@rtype-cpu](https://github.com/rtype-cpu) |
 | V0000.09.60L.Q0623 (55A6NV (platform model 55A60QUV), BRA (Hisense_GetRegion AM; SSDP region ?)) | MTK9603 | untested | untested | untested | untested | untested | [@TioLen](https://github.com/TioLen) |
 | V0000.09.62M.Q0921 (85U7SE, AU (owner-confirmed; AU presets in applist)) | MTK9655 (MT5896 die, mt5877 family) | open | open | untested | untested | achieved | [@vsinh14](https://github.com/vsinh14) |
+| V0000.09.60V.Q0618 (65UR9S, ?) | MT9655 (32-bit ARM userland) | untested | untested | untested | untested | achieved | unit owner |
 <!-- INVENTORY:END -->
 
 **Read of the table:** the July EU_A reporter observed `fileWrite` rejected

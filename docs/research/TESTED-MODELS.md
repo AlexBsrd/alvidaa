@@ -54,6 +54,7 @@ builds.
 | 100U7SAU (SSDP modelName 100U7QE) | AU (EUEM AUS) | MT9655 (aarch64 kernel 5.15.180, aarch64 userland) | 9.05.00 | V02.09.50U.Q0311 | not exposed (stub dd.xml on :3366) | Chromium 111 (odin) | working | achieved | [@rtype-cpu](https://github.com/rtype-cpu) |
 | 55A6NV (platform model 55A60QUV) | BRA (Hisense_GetRegion AM; SSDP region ?) | MTK9603 | U09.60 | V0000.09.60L.Q0623 | ? | Chromium 111.5563.5.1 "Odin" (armv7l) | working | untested | [@TioLen](https://github.com/TioLen) |
 | 85U7SE | AU (owner-confirmed; AU presets in applist) | MTK9655 (MT5896 die, mt5877 family) | U09.62 | V0000.09.62M.Q0921 | not-exposed-over-SSDP | Chromium 111 "odin" WebViewer/3.0.0 (aarch64 UA, arm32 userland) | untested | achieved | [@vsinh14](https://github.com/vsinh14) |
+| 65UR9S | ? | MT9655 (32-bit ARM userland) | U09.0 (from the 09.60 firmware generation; not read from the device) | V0000.09.60V.Q0618 | untested | Chromium 111 "WebViewer/7.0.15" (Cobalt, aarch64 UA) | untested | achieved | unit owner |
 <!-- INVENTORY:END -->
 
 ## What each token means on each unit
@@ -223,6 +224,9 @@ never hand-edit between the markers.
 **85U7SE — V0000.09.62M.Q0921**
 - `pairing` **working** — Modern-profile PIN pairing via the RemoteNow broker; applist 33 entries (AU presets).
 - `root` **achieved** — Same chain as 75UR9S/75U8QTUK. Verified interactive root shell over key-only dropbear 2022.83 (static aarch64, no-pie relink required); postinst log retained at /APPS/.re_sshd/installer_log.txt. Rollback documented in the model guide.
+
+**65UR9S — V0000.09.60V.Q0618**
+- `root` **achieved** — Root shell on TCP 8008 verified 2026-11-22 (uid 0, CapEff 000001ffffffffff, from the operator PC over the LAN). Boot persistence verified across a real reboot: the re_sshd service armed the channel on its first attempt, ~31 s after boot, with no browser and no operator action.
 <!-- INVENTORY_DETAIL:END -->
 
 ## Community reports awaiting details

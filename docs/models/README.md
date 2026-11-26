@@ -8,6 +8,7 @@ recorded on. Cross-model material lives in `docs/research/`.
 - [50A51HUV findings](50A51HUV/09.01O.P0813/FINDINGS.md)
 - [65A70LAVT / MTK9603 guide](65A70LAVT/V0000.09.60A.Q0707/README.md)
 - [65A85QEVS / MTK9618 guide](65A85QEVS/V0000.09.60A.Q0602/README.md)
+- [65UR9S / MTK9655 guide](65UR9S/V0000.09.60V.Q0618/README.md)
 - [75U7KQ / U09.09 guide](75U7KQ/V0000.09.09O.P0930/README.md)
 - [55U65QEVS / MTK9618 guide](55U65QEVS/V0000.09.60A.Q0602/README.md)
 - [method inventory](../research/EXPLOITS.md)
@@ -48,6 +49,7 @@ Every-boot DNS coverage has a same-day re-arm failure mode — see findings/09 f
 | `65A85QEVS` (internal `65A8QE`) | `V0000.09.60A.Q0602` (VIDAA `U09.60`, EU_A/CZE) | MediaTek MTK9618, aarch64 kernel / 32-bit ARM userland | root via fetcher → superwatch 83/82 → IPK postinst uid 0; root shell is the vendor Node runtime on `:8008` (no cross-compiled binary, busybox has no `nc`) | PFM lane (`DebugPowerup` + `pfmParse/PFMCheck`, eval'd as uid 0) with self-replant after the vendor wipe; cold boot pending | [README](65A85QEVS/V0000.09.60A.Q0602/README.md) · [FINDINGS](65A85QEVS/V0000.09.60A.Q0602/FINDINGS.md) |
 | `100U7SAU` (`100U7QE`) | `V02.09.50U.Q0311` (OperationUI `9.05.00`, AU) | MediaTek MT9655, aarch64 kernel + aarch64 userland | pairing, lane 2 (retired), lane 3 native Home (75U8QTUK adapter), and boot-persistent key-only root SSH on 8009 via fetcher → superwatch → opkg postinst | **boot-persistent** (`re_sshd` BaseService + `serviceList.json` autoStart, verified across two cold boots) | [README](100U7SAU/V02.09.50U.Q0311/README.md) |
 | `85U7SE` (UR8S) | `V0000.09.62M.Q0921` (VIDAA `U09.62`, AU) | MediaTek MTK9655 (`MT5896`, aarch64 kernel + arm32 userland) | root via fetcher write → superwatch → IPK `postinst` (uid 0, full CapEff); aarch64 static Dropbear key-only on 8008 + SFTP; OTA uid-304 block | **boot-persistent** (`re_sshd` serviceList autostart, verified across cold reboot) | [README](85U7SE/V0000.09.62M.Q0921/README.md) · [EVIDENCE](85U7SE/V0000.09.62M.Q0921/EVIDENCE.md) · [MODDING](85U7SE/V0000.09.62M.Q0921/MODDING.md) |
+| `65UR9S` (UR9S family, sibling of the `75UR9S`) | `V0000.09.60V.Q0618` (VIDAA `U09.60`, region not read) | MediaTek MTK9655, 32-bit ARM userland | root via fetcher FaaS write → superwatch `83`/`82` → IPK `postinst` uid 0; root shell is the vendor Node runtime on `:8008` (no sshd, no dropbear, no nc/wget/curl, busybox without an `nc` applet) | **boot-persistent** (`re_sshd` serviceList autostart, verified 2026-11-22 across a real reboot — channel armed ~31 s after boot, no browser and no operator action) | [README](65UR9S/V0000.09.60V.Q0618/README.md) · [01](65UR9S/V0000.09.60V.Q0618/findings/01-recon.md) · [02](65UR9S/V0000.09.60V.Q0618/findings/02-install-chain.md) · [03](65UR9S/V0000.09.60V.Q0618/findings/03-root-and-persistence.md) |
 
 New guides start from [_TEMPLATE.md](_TEMPLATE.md), which carries the
 fingerprint, the evidence labels and the required *What this guide includes
