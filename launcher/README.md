@@ -11,7 +11,9 @@ its app registry, which is why the layout is flat and the names are stable.
 
 | File | URL | What it is |
 | --- | --- | --- |
-| `index.html` | `/` | **The launcher.** Single canvas, 1920×1080, clock + inputs dock at the bottom, one Apps tile that opens the app list as an overlay. This is what the TV loads. |
+| `index.html` | `/` on the on-TV Go bridge | **The launcher.** Single canvas, 1920×1080, clock + inputs dock at the bottom, one Apps tile that opens the app list as an overlay. |
+| `next/app.html` | `/` on the external Python server | The currently routed two-row launcher page, with a remote-navigable settings gear beside the status indicator. |
+| `settings.html` | `/settings.html` | External Python-server settings page for the Home watcher delay and pause/resume controls, navigable with the TV remote. Not supported by the on-TV Go bridge. |
 | `debug.html` | `/debug.html` | **Root Status.** Fetches `/api/debug` every 10s: bridge version, MQTT identity, hook version and kill-switch, disk, TV model/firmware. Bound to the launcher's Root Status tile. |
 | `recon.html` | `/recon.html` | **Onboarding probe.** The read-only recon page that fingerprints a new model. `TESTED-MODELS.md` points at it, and it is installed as a TV app on the reference unit. |
 | `alvidaa-remote.js` | `/alvidaa-remote.js` | The in-engine overlay script (Lane 2, legacy). Kept because the hisenseUI overlay path still references it. |
@@ -20,9 +22,9 @@ its app registry, which is why the layout is flat and the names are stable.
 
 ## Staging
 
-`next/` holds candidate pages that are **not linked from anywhere** and are
-served only at `/next/…` for review. Nothing here is live until it is copied
-over `index.html`.
+`next/` holds candidate pages served at `/next/…` for review. The external
+Python server currently has an explicit route from `/` to `next/app.html`; the
+on-TV Go bridge continues to serve `index.html`.
 
 ## Probes
 

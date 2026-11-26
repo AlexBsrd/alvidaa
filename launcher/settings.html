@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings — Alvidaa</title>
+<style>
+  :root { color-scheme: dark; font-family: Arial, sans-serif; background: #07080c; color: #f8fafc; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  main { width: min(680px, 100%); padding: 32px; border: 1px solid #293242; border-radius: 20px; background: #11151e; }
+  h1 { margin: 0 0 28px; font-size: 30px; }
+  .setting { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  label { font-size: 20px; }
+  input { width: 120px; padding: 12px; border: 1px solid #475569; border-radius: 10px; background: #07080c; color: #fff; font-size: 20px; }
+  .hint, #status { min-height: 24px; color: #94a3b8; line-height: 1.5; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+  button { min-height: 48px; padding: 10px 18px; border: 1px solid #475569; border-radius: 10px; background: #1e293b; color: #fff; font-size: 17px; cursor: pointer; }
+  button:focus, input:focus { outline: 3px solid #38bdf8; outline-offset: 2px; }
+  #stop { border-color: #b45353; background: #512525; }
+  #status[data-error="true"] { color: #fca5a5; }
+  @media (max-width: 520px) {
+    main { padding: 24px; }
+    .setting { align-items: flex-start; flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Settings</h1>
+  <div class="setting">
+    <label for="home-delay">Home button delay</label>
+    <input id="home-delay" type="number" min="0" max="60" step="1" value="0" inputmode="numeric">
+  </div>
+  <p class="hint">Seconds to wait after detecting the stock Home screen before reopening Alvidaa. Enter a value from 0 to 60.</p>
+  <div class="actions">
+    <button id="save" type="button">Save</button>
+    <button id="stop" type="button">Stop service</button>
+    <button id="back" type="button">Back</button>
+  </div>
+  <p id="status" role="status" aria-live="polite">Loading settings…</p>
+  <p class="hint">Stop service pauses only automatic return; the server remains active. Press Home and open Alvidaa manually from the stock Home screen to resume automatic return.</p>
+</main>
+<script>
+"use strict";
+var delayInput = document.getElementById("home-delay");
+var statusText = document.getElementById("status");
+var saveButton = document.getElementById("save");
+var stopButton = document.getElementById("stop");
+var backButton = document.getElementById("back");
+var actionButtons = [saveButton, stopButton, backButton];
+
+delayInput.focus();
+
+function showStatus(text, error) {
+  statusText.textContent = text;
+  statusText.setAttribute("data-error", error ? "true" : "false");
+}
+
+function request(data, callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.open(data ? "POST" : "GET", "/api/watcher", true);
+  if (data) xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4) return;
+    var result;
+    try { result = JSON.parse(xhr.responseText); }
+    catch (e) { callback(null, "Invalid response from server."); return; }
+    if (xhr.status < 200 || xhr.status >= 300 || !result.ok) {
+      callback(null, result.error || "The request failed.");
+      return;
+    }
+    callback(result, null);
+  };
+  xhr.onerror = function () { callback(null, "Could not connect to the server."); };
+  xhr.send(data ? JSON.stringify(data) : null);
+}
+
+request(null, function (result, error) {
+  if (error) { showStatus(error, true); return; }
+  delayInput.value = result.delay;
+  showStatus(result.paused ? "Automatic return is paused." : "Automatic return is active.", false);
+});
+
+saveButton.addEventListener("click", function () {
+  var delay = Number(delayInput.value);
+  if (!Number.isInteger(delay) || delay < 0 || delay > 60) {
+    showStatus("Enter a whole number from 0 to 60.", true);
+    return;
+  }
+  saveButton.disabled = true;
+  request({ action: "set_delay", delay: delay }, function (result, error) {
+    saveButton.disabled = false;
+    if (error) { showStatus(error, true); return; }
+    delayInput.value = result.delay;
+    showStatus("Delay saved: " + result.delay + " s.", false);
+  });
+});
+
+stopButton.addEventListener("click", function () {
+  stopButton.disabled = true;
+  request({ action: "pause" }, function (result, error) {
+    stopButton.disabled = false;
+    if (error) { showStatus(error, true); return; }
+    showStatus("Automatic return paused. Press Home to return to the stock Home screen.", false);
+  });
+});
+
+backButton.addEventListener("click", function () {
+  location.href = "/";
+});
+
+document.addEventListener("keydown", function (event) {
+  if (event.key === "Escape" || event.key === "Backspace" ||
+      event.key === "GoBack" || event.key === "BrowserBack" || event.key === "Back") {
+    event.preventDefault();
+    location.href = "/";
+    return;
+  }
+
+  var activeAction = actionButtons.indexOf(document.activeElement);
+  if (document.activeElement === delayInput && event.key === "ArrowDown") {
+    event.preventDefault();
+    saveButton.focus();
+  } else if (activeAction >= 0 && event.key === "ArrowUp") {
+    event.preventDefault();
+    delayInput.focus();
+  } else if (activeAction > 0 && event.key === "ArrowLeft") {
+    event.preventDefault();
+    actionButtons[activeAction - 1].focus();
+  } else if (activeAction >= 0 && activeAction < actionButtons.length - 1 &&
+             event.key === "ArrowRight") {
+    event.preventDefault();
+    actionButtons[activeAction + 1].focus();
+  }
+});
+</script>
+</body>
+</html>

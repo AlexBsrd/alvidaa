@@ -42,6 +42,7 @@
 | 09.61B.Q0704 (65U7NQTUK, UK) | unknown | untested | untested | untested | untested | untested | [@ponciusz](https://github.com/ponciusz) |
 | V0000.09.60I.Q0804 (65U70QEVS (65U7QE), EU_A (ESP)) | MT9655 (aarch64 native — unlike 100U7Q which is 32-bit ARM) | open | open | untested | untested | achieved | [@jasimancas](https://github.com/jasimancas) |
 | V02.09.50U.Q0311 (100U7SAU (SSDP modelName 100U7QE), AU (EUEM AUS)) | MT9655 (aarch64 kernel 5.15.180, aarch64 userland) | untested | untested | untested | untested | achieved | [@rtype-cpu](https://github.com/rtype-cpu) |
+| V0000.09.60L.Q0623 (55A6NV (platform model 55A60QUV), BRA (Hisense_GetRegion AM; SSDP region ?)) | MTK9603 | untested | untested | untested | untested | untested | [@TioLen](https://github.com/TioLen) |
 <!-- INVENTORY:END -->
 
 **Read of the table:** the July EU_A reporter observed `fileWrite` rejected

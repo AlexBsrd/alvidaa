@@ -52,6 +52,7 @@ builds.
 | 65U7NQTUK | UK | unknown | U09.61 | 09.61B.Q0704 | unknown | unknown | blocked | untested | [@ponciusz](https://github.com/ponciusz) |
 | 65U70QEVS (65U7QE) | EU_A (ESP) | MT9655 (aarch64 native — unlike 100U7Q which is 32-bit ARM) | U09.60 | V0000.09.60I.Q0804 | 3290 | Chromium 111.0.0.0 "Odin" (aarch64) | working | achieved | [@jasimancas](https://github.com/jasimancas) |
 | 100U7SAU (SSDP modelName 100U7QE) | AU (EUEM AUS) | MT9655 (aarch64 kernel 5.15.180, aarch64 userland) | 9.05.00 | V02.09.50U.Q0311 | not exposed (stub dd.xml on :3366) | Chromium 111 (odin) | working | achieved | [@rtype-cpu](https://github.com/rtype-cpu) |
+| 55A6NV (platform model 55A60QUV) | BRA (Hisense_GetRegion AM; SSDP region ?) | MTK9603 | U09.60 | V0000.09.60L.Q0623 | ? | Chromium 111.5563.5.1 "Odin" (armv7l) | working | untested | [@TioLen](https://github.com/TioLen) |
 <!-- INVENTORY:END -->
 
 ## What each token means on each unit
@@ -213,6 +214,10 @@ never hand-edit between the markers.
 - `launcher` **working** — Lane 2 verified 2026-11-25: alvidaa-home tile registered in launcher/allAppsInfo.txt and launched via ui_service/actions/launchapp after a VIDAA sweep; bridge served the page on 127.0.0.1:8770. Retired in favour of lane 3 the same day.
 - `native_home` **working** — alvidaa native Home via the operationui app.js /Launcher route component swap (candidate pinned to stock sha256 96dc95be6afd0d0f8d5806a8c54e14036ee59ca0a8dd84f68c70072875abb31c; candidate md5 e751bee542bcba88148283e6e600bc8a). Stock backup kept on-device (/var/local/app.js.stock-2026-11-25) and off-TV. Rollback = restore stock app.js + reboot. Owner-confirmed working 2026-11-25; survives reboot.
 - `root` **achieved** — Key-only SSH on 8009 with root uid 0; boot persistence via re_sshd BaseService in tv.vidaa.jsservice.basic/CHA/services + one serviceList.json autoStart entry; re-arms at every cold boot (ARMED attempt 1, two consecutive boots verified).
+
+**55A6NV (platform model 55A60QUV) — V0000.09.60L.Q0623**
+- `pairing` **working** — RemoteNow pairing and control for the external Python server are owner-confirmed on this TV; see the project progress note.
+- `launcher` **working** — External-server Home, WebSocket connection, and return via the Home watcher are owner-confirmed; native Home is not verified.
 <!-- INVENTORY_DETAIL:END -->
 
 ## Community reports awaiting details
