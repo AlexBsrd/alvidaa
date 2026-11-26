@@ -50,6 +50,7 @@ builds.
 | 65A70LAVT (serial type 65A7NA) | AU (EM_C, countryID AUS) | MTK9603 (MT5896) | U09.60 | V0000.09.60A.Q0707 (65A70LAVT) | ? | Chromium 111.5563.5.1 "Odin" (armv7l) | untested | achieved | [u/sl3yr84](https://reddit.com/user/sl3yr84) |
 | 55U65QEVS (retail 55U7QTUK; serial type 55U6QE) | EU_A (Great Britain) | MTK9618 (aarch64 kernel 5.4.302, 32-bit ARM userland; mt5879) | U09.60 | V0000.09.60A.Q0602 (55U65QEVS) | untested (SSDP silent in recon; 36669/7000 answer) | Chromium 111 "odin" (WebExplorer/5.2.1) | working | achieved | [@gwerneckp](https://github.com/gwerneckp) |
 | 65U7NQTUK | UK | unknown | U09.61 | 09.61B.Q0704 | unknown | unknown | blocked | untested | [@ponciusz](https://github.com/ponciusz) |
+| 65U70QEVS (65U7QE) | EU_A (ESP) | MT9655 (aarch64 native — unlike 100U7Q which is 32-bit ARM) | U09.60 | V0000.09.60I.Q0804 | 3290 | Chromium 111.0.0.0 "Odin" (aarch64) | working | achieved | [@jasimancas](https://github.com/jasimancas) |
 <!-- INVENTORY:END -->
 
 ## What each token means on each unit
@@ -198,6 +199,13 @@ never hand-edit between the markers.
 **65U7NQTUK — 09.61B.Q0704**
 - `pairing` **working** — Modern profile verified with client_mobile_android.p12 cert/key and colon-separated TV_MAC; PIN accepted and tokens.json written.
 - `launcher` **blocked** — Web UI + live state work in TV browser, but non-root app installation is blocked by the appconfig permission check ('client request permission check error please check appconfig') and hisense://debug is unavailable.
+
+**65U70QEVS (65U7QE) — V0000.09.60I.Q0804**
+- `pairing` **working** — RemoteNow MQTT on 36669, cert + token auth, auto-pairs with the launcher server.
+- `launcher` **working** — Lane 1 operational (web launcher via /api/open). Admin web UI for sources/apps. Lane 3 (native) untested on this unit.
+- `file_bridge_traversal` **open** — fileRead resolves relative to /APPS, explicit .. blocking on Q0804. All paths inside /APPS readable.
+- `file_bridge_write` **open** — fetchFile (FaaS fetcher) writes arbitrary files as uid 314 to any absolute path under /APPS. Verified with test file write+readback.
+- `root` **achieved** — Root SSH on port 8008, key-only ed25519 auth. Dropbear 2022.83 aarch64 static-pie (433 KB, built with zig cc + musl). IPK install via superwatch socket commands 83+82. Postinst runs as uid 0 with full capabilities (CapEff 000001ffffffffff). Firewall rule injected into FIREWALL_IN_EULAON. ALV_BLOCK telemetry chain (15 rules). No boot persistence — reboot clears all; re-arm with the install chain.
 <!-- INVENTORY_DETAIL:END -->
 
 ## Community reports awaiting details

@@ -907,6 +907,37 @@
         "pairing": "Modern profile verified with client_mobile_android.p12 cert/key and colon-separated TV_MAC; PIN accepted and tokens.json written.",
         "launcher": "Web UI + live state work in TV browser, but non-root app installation is blocked by the appconfig permission check ('client request permission check error please check appconfig') and hisense://debug is unavailable."
       }
+    },
+    {
+      "id": "V0000.09.60I.Q0804",
+      "model": "65U70QEVS (65U7QE)",
+      "region": "EU_A (ESP)",
+      "soc": "MT9655 (aarch64 native — unlike 100U7Q which is 32-bit ARM)",
+      "vidaa_os": "U09.60",
+      "transport_protocol": "3290",
+      "browser": "Chromium 111.0.0.0 \"Odin\" (aarch64)",
+      "build_date": "2026-08-04 (kernel)",
+      "tested_by": [
+        "gh:jasimancas"
+      ],
+      "capabilities": {
+        "pairing": "working",
+        "launcher": "working",
+        "file_bridge_traversal": "open",
+        "file_bridge_write": "open",
+        "identity_gate": "untested",
+        "euladpp_untar": "untested",
+        "devtools_forge": "untested",
+        "root": "achieved",
+        "notes": "Model guide: docs/models/65U70QEVS/V0000.09.60I.Q0804/. 100U7Q chain confirmed on Q0804 (earlier build than Q0813). Key finding: MT9655 on this model runs native aarch64 userland, not 32-bit ARM as documented for the 100U7Q. The armhf compatibility loader exists (/lib/ld-linux-armhf.so.3) so bash (armhf) runs, but Dropbear must be an aarch64 static binary. Build uses zig cc targeting aarch64-linux-musl."
+      },
+      "capability_detail": {
+        "pairing": "RemoteNow MQTT on 36669, cert + token auth, auto-pairs with the launcher server.",
+        "launcher": "Lane 1 operational (web launcher via /api/open). Admin web UI for sources/apps. Lane 3 (native) untested on this unit.",
+        "file_bridge_traversal": "fileRead resolves relative to /APPS, explicit .. blocking on Q0804. All paths inside /APPS readable.",
+        "file_bridge_write": "fetchFile (FaaS fetcher) writes arbitrary files as uid 314 to any absolute path under /APPS. Verified with test file write+readback.",
+        "root": "Root SSH on port 8008, key-only ed25519 auth. Dropbear 2022.83 aarch64 static-pie (433 KB, built with zig cc + musl). IPK install via superwatch socket commands 83+82. Postinst runs as uid 0 with full capabilities (CapEff 000001ffffffffff). Firewall rule injected into FIREWALL_IN_EULAON. ALV_BLOCK telemetry chain (15 rules). No boot persistence — reboot clears all; re-arm with the install chain."
+      }
     }
   ]
 }
