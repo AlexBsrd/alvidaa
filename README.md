@@ -195,6 +195,7 @@ both regenerate from `docs/research/inventory.json`.
 | 65U70QEVS | V0000.09.60I.Q0804 | working | achieved | [@jasimancas](https://github.com/jasimancas) |
 | 100U7SAU | V02.09.50U.Q0311 | working | achieved | [@rtype-cpu](https://github.com/rtype-cpu) |
 | 55A6NV | V0000.09.60L.Q0623 | working | untested | [@TioLen](https://github.com/TioLen) |
+| 85U7SE | V0000.09.62M.Q0921 | untested | achieved | [@vsinh14](https://github.com/vsinh14) |
 <!-- INVENTORY:END -->
 
 **Report yours by PR, not issue** — add a firmware entry to [inventory.json](docs/research/inventory.json) (single source of truth; fields and where to find them: [TESTED-MODELS.md](docs/research/TESTED-MODELS.md)) and run `scripts/gen-inventory.py` — every table in the repo regenerates from it.
